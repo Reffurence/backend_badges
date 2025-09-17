@@ -1,0 +1,10 @@
+routes:
+  /template:
+    type: template
+    from: asset://template.yml
+    params:
+      margin: { type: len }
+
+  /batch:
+    type: batch
+    from: asset://batch.yml

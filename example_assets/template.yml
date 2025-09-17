@@ -1,0 +1,32 @@
+size: [ 500, 500 ]
+
+layers:
+  - !<rect>
+    rect: [
+      $margin, $margin,
+      100% - 2*$margin, 100% - 2*$margin
+    ]
+    color: (#F00)
+
+  - !<image>
+    rect: [
+      50px, 50px,
+      100% - 100px, 100% - 100px
+    ]
+    image: asset://hambuwurg.png
+
+  - !<text>
+    text: Design is coming
+    font: asset://delius.ttf
+    size: 20px
+    pos: [ 50%, 50px ]
+    color: (#000)
+    v_align: bottom
+    h_align: center
+
+  - !<svg>
+    rect: [
+      20px, 20px,
+      30px, 30px
+    ]
+    image: asset://train.svg

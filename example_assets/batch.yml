@@ -1,0 +1,18 @@
+vars:
+  margin: 10px
+
+entries:
+  - name: a
+    template: asset://template.yml
+    vars:
+      margin: 20px
+
+  - name: b
+    template: asset://template.yml
+    vars:
+      margin: 10px
+
+  - name: c
+    template: asset://template.yml
+    vars:
+      margin: 0px
