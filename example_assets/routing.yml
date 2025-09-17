@@ -4,6 +4,7 @@ routes:
     from: asset://template.yml
     params:
       margin: { type: len }
+      img: { type: str }
 
   /batch:
     type: batch

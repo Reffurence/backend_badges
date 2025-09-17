@@ -355,6 +355,14 @@ class Expr internal constructor(
         }
     }
 
+    fun thenConvertTo(type: Type<*>): Expr {
+        val builder = ExprBuilder(ops.size + 2)
+        builder.append(this)
+        builder.opcode(Ops.CONV)
+        builder.type(type)
+        return builder.build()
+    }
+
     companion object {
         fun constNull(): Expr {
             return Expr(

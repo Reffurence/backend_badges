@@ -16,7 +16,7 @@ import net.foxboi.mlem.model.dyn.ScopeStack
 import net.foxboi.mlem.route.Route
 import net.foxboi.mlem.route.RouteType
 import net.foxboi.mlem.route.Router
-import net.foxboi.mlem.serial.SerialExpr
+import net.foxboi.mlem.serial.SerialDyn
 import net.foxboi.mlem.serial.batch.SerialBatch
 import net.foxboi.mlem.serial.template.SerialTemplate
 
@@ -28,16 +28,16 @@ class MlemServer(
 
     suspend fun start() {
         val asset = Mlem.config.router
-        if (asset == null) {
+        val router = if (asset == null) {
             Log.warn { "No routing was set in config" }
-            return
-        }
-
-        val text = Mlem.assets.text(asset)
-        val router = try {
-            Mlem.yaml.decodeFromString<Router>(text)
-        } catch (e: Exception) {
-            throw ConfigException("Failed to load router", e)
+            null
+        } else {
+            val text = Mlem.assets.text(asset)
+            try {
+                Mlem.yaml.decodeFromString<Router>(text)
+            } catch (e: Exception) {
+                throw ConfigException("Failed to load router", e)
+            }
         }
 
         server = embeddedServer(CIO, port = port, host = host) {
@@ -62,11 +62,11 @@ class MlemServer(
             val serial = if (qValue == null) {
                 param.fallback ?: throw BadRequestException("Missing required body parameter '$name'")
             } else {
-                SerialExpr(qValue.content)
+                SerialDyn(qValue.content)
             }
 
             val expr = try {
-                serial.instantiate()
+                serial.instantiateAsExpr(param.type)
             } catch (e: Exception) {
                 throw BadRequestException("Malformed body parameter '$name'", e)
             }
@@ -87,11 +87,11 @@ class MlemServer(
             val serial = if (qValue == null) {
                 param.fallback ?: throw BadRequestException("Missing required input parameter '$name'")
             } else {
-                SerialExpr(qValue)
+                SerialDyn(qValue)
             }
 
             val expr = try {
-                serial.instantiate()
+                serial.instantiateAsExpr(param.type)
             } catch (e: Exception) {
                 throw BadRequestException("Malformed input parameter '$name'", e)
             }
@@ -157,13 +157,15 @@ class MlemServer(
         }
     }
 
-    private fun Routing.configRouting(router: Router) {
+    private fun Routing.configRouting(router: Router?) {
         get("/") {
             call.respondText("Hi I am MLEM server")
         }
 
-        for ((path, route) in router.routes) {
-            createEndpoint(path, route)
+        if (router != null) {
+            for ((path, route) in router.routes) {
+                createEndpoint(path, route)
+            }
         }
     }
 }

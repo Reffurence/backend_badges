@@ -1,5 +1,8 @@
 size: [ 500, 500 ]
 
+vars:
+  img: ("asset://hambuwurg.png")
+
 layers:
   - !<rect>
     rect: [
@@ -13,7 +16,7 @@ layers:
       50px, 50px,
       100% - 100px, 100% - 100px
     ]
-    image: asset://hambuwurg.png
+    image: $img
 
   - !<text>
     text: Design is coming
