@@ -15,6 +15,15 @@ import net.foxboi.badger.asset.Asset
 import net.foxboi.badger.util.PathSerializer
 import kotlin.system.exitProcess
 
+/**
+ * Badger's configuration instance.
+ *
+ * @param port      The port to open a server at.
+ * @param host      The server host.
+ * @param assetsDir The assets directory, where local assets are loaded from.
+ * @param tempDir   The temporary directory, where temporary files are stored.
+ * @param router    The router asset. When unspecified, the server will not serve anything.
+ */
 @Serializable
 data class Config(
     val port: Int = 80,

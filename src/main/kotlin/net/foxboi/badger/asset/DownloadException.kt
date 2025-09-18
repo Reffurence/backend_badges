@@ -2,5 +2,7 @@ package net.foxboi.badger.asset
 
 import net.foxboi.badger.EngineException
 
-class DownloadException(message: String?) : EngineException(message) {
-}
+/**
+ * Exception thrown by [AssetManager] when a download fails.
+ */
+class DownloadException(message: String?) : EngineException(message)

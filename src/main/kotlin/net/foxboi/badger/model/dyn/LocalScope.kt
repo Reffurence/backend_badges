@@ -3,6 +3,9 @@ package net.foxboi.badger.model.dyn
 import net.foxboi.badger.expr.Expr
 import net.foxboi.badger.expr.Value
 
+/**
+ * A simple [Scope] instance in which variables can be set.
+ */
 class LocalScope : Scope {
     private val variables = mutableMapOf<String, Expr>()
 

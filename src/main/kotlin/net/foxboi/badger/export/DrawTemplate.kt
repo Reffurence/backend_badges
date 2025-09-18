@@ -9,6 +9,15 @@ import net.foxboi.badger.model.dyn.ScopeStack
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Canvas
 
+/**
+ * Draw a [Template] to a Skia [Bitmap].
+ *
+ * @param template The [Template] to draw.
+ * @param stack    The [ScopeStack] to fetch variables from.
+ * @param assets   The [AssetManager] to load assets from.
+ *
+ * @return The [Bitmap] with the drawn template.
+ */
 suspend fun drawTemplateToBitmap(template: Template, stack: ScopeStack, assets: AssetManager): Bitmap {
     val wdt = template.wdt
     val hgt = template.hgt
@@ -27,6 +36,16 @@ suspend fun drawTemplateToBitmap(template: Template, stack: ScopeStack, assets: 
     return bmp
 }
 
+/**
+ * Draw an [Entry] to a Skia [Bitmap], if needed.
+ *
+ * @param batch  The [Batch] where the entry is from.
+ * @param entry  The [Entry] to draw.
+ * @param stack  The [ScopeStack] to fetch variables from.
+ * @param assets The [AssetManager] to load assets from.
+ *
+ * @return The [Bitmap] with the drawn entry, or `null` if the entry condition failed.
+ */
 suspend fun drawEntryToBitmap(
     batch: Batch,
     entry: Entry,

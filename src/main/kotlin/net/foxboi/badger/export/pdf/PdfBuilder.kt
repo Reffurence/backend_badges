@@ -11,6 +11,9 @@ import org.jetbrains.skiko.toBufferedImage
 import java.nio.file.Paths
 import kotlin.io.path.outputStream
 
+/**
+ * A builder that writes images to PDF pages and then writes the PDF to a given output file.
+ */
 class PdfBuilder(val outputPath: Path) : AutoCloseable {
     init {
         val par = outputPath.parent

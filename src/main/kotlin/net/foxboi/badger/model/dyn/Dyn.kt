@@ -4,9 +4,18 @@ import net.foxboi.badger.expr.*
 import net.foxboi.badger.util.Color
 import net.foxboi.badger.util.Length
 
+/**
+ * A dynamic, [Scope]-dependent value.
+ */
 sealed interface Dyn<out T> {
+    /**
+     * Resolves the value given a [Scope].
+     */
     infix fun via(scope: Scope): T
 
+    /**
+     * Returns a dynamic value derived from this value using the given mapping function.
+     */
     fun <U> map(map: (T) -> U): Dyn<U> {
         return Map(this, map)
     }
@@ -31,14 +40,25 @@ sealed interface Dyn<out T> {
     }
 
     companion object {
+        /**
+         * Returns a [Dyn] value that is independent of scope and always returns the given value.
+         */
         fun <T> const(value: T): Dyn<T> {
             return Const(value)
         }
 
+        /**
+         * Returns a [Dyn] value evaluates the given expression and unwraps the resulting [Value] using the given
+         * unwrap function.
+         */
         fun <T> eval(expr: Expr, unwrap: (Value<*>) -> T): Dyn<T> {
             return Eval(expr, unwrap)
         }
 
+        /**
+         * Returns a [Dyn] value evaluates the given expression and unwraps the resulting [Value] by converting it to
+         * the specified [Type], if possible. If the conversion fails, a [DynException] is thrown.
+         */
         fun <T : Any> eval(expr: Expr, type: Type<T>): Dyn<T> {
             return eval(expr) {
                 val value = it.convert(type) ?: throw DynException("Can't convert ${it.type.name} to ${type.name}")
@@ -46,6 +66,11 @@ sealed interface Dyn<out T> {
             }
         }
 
+        /**
+         * Returns a [Dyn] value evaluates the given expression and unwraps the resulting [Value] by converting it to
+         * the specified [Type], if possible, and to `null` if the given value is of the [NullType].
+         * If the conversion fails, a [DynException] is thrown.
+         */
         fun <T : Any> optEval(expr: Expr, type: Type<T>): Dyn<T?> {
             return eval(expr) {
                 if (it.isType(NullType)) {

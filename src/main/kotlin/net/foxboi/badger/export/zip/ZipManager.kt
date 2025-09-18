@@ -3,6 +3,9 @@ package net.foxboi.badger.export.zip
 import kotlinx.io.files.Path
 import net.foxboi.badger.Badger
 
+/**
+ * Manages temporary creation of ZIP files.
+ */
 class ZipManager(
     val tmpDir: Path
 ) {

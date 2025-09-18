@@ -15,7 +15,7 @@ import net.foxboi.badger.expr.StrType
 import net.foxboi.badger.expr.Type
 import net.foxboi.badger.expr.parseExpr
 import net.foxboi.badger.model.dyn.Dyn
-import net.foxboi.badger.route.VarType
+import net.foxboi.badger.route.ParamType
 
 @Serializable(SerialDynSerializer::class)
 class SerialDyn(val value: String) {
@@ -52,16 +52,16 @@ class SerialDyn(val value: String) {
         }
     }
 
-    fun instantiateAsExpr(type: VarType): Expr {
+    fun instantiateAsExpr(type: ParamType): Expr {
         return when (type) {
-            VarType.STR -> if (value.startsWith("(") && value.endsWith(")") || value.startsWith("$")) {
+            ParamType.STR -> if (value.startsWith("(") && value.endsWith(")") || value.startsWith("$")) {
                 val expr = parseExpr(value)
                 return expr.thenConvertTo(StrType)
             } else {
                 return Expr.const(StrType.new(value))
             }
 
-            VarType.ANY -> parseExpr(value)
+            ParamType.ANY -> parseExpr(value)
 
             else -> parseExpr(value).thenConvertTo(type.type!!)
         }

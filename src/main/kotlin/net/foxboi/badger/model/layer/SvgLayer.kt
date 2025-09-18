@@ -8,6 +8,16 @@ import net.foxboi.badger.model.dyn.Scope
 import net.foxboi.badger.util.Length
 import kotlin.math.ceil
 
+/**
+ * A layer that draws an SVG image. Note that the scaling of the SVG image is uniform, when the layer rectangle does not
+ * match the SVG's aspect ratio, then the SVG image will be centered in the rectangle with the largest fitting size.
+ *
+ * @param x     The x coordinate to draw the image at.
+ * @param y     The y coordinate to draw the image at.
+ * @param w     The width to draw the image with.
+ * @param h     The height to draw the image with.
+ * @param image The SVG asset.
+ */
 class SvgLayer(
     val x: Dyn<Length>,
     val y: Dyn<Length>,

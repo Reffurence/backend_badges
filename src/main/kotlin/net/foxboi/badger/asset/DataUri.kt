@@ -2,21 +2,71 @@ package net.foxboi.badger.asset
 
 import io.ktor.http.*
 import kotlinx.io.Buffer
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.decodeToString
+import kotlinx.io.bytestring.encodeToAppendable
+import kotlinx.io.write
+import java.nio.charset.Charset
 import kotlin.io.encoding.Base64
 
-class DataUrl internal constructor(
-    val data: ByteArray,
-    val contentType: ContentType?,
-    var stringCache: String? = null
-) {
-    fun charset() = contentType?.charset() ?: Charsets.US_ASCII
+/**
+ * A parsed data URI, as specified in [RFC 2397](https://www.rfc-editor.org/rfc/rfc2397.html).
+ * The resource identified by a data URI is inlined in the URI itself, possibly encoded using
+ * [base-64](Base64). The following formats are supported:
+ * - `data:,<data>`, raw data in a `US-ASCII` charset, of no particular type.
+ * - `data:content/type,<data>`, raw data of a particular content type, in `US-ASCII` if no charset is explicitly
+ *   specified.
+ * - `data:base64,<data>`, base-64-encoded data of no particular type.
+ * - `data:content/type;base64,<data>`, base-64-encoded data of the specified content type.
+ *
+ * For example, the data URI `data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAZABkAAD...` is the beginning of a data URI
+ * encoding a JPEG image in base-64. The full URI would be much longer.
+ */
+class DataUri(
+    /**
+     * The raw data in the URI. This data is never in base-64.
+     */
+    val data: ByteString,
 
-    fun copyToBuffer(): Buffer {
+    /**
+     * The content type of the data. May be `null` to indicate an unspecified content type.
+     */
+    val contentType: ContentType? = null
+) {
+    /**
+     * Returns the [Charset] the data is encoded with. When no charset or content type is specified, then it will
+     * assume the `US-ASCII` charset.
+     */
+    fun charset(): Charset = contentType?.charset() ?: Charsets.US_ASCII
+
+    /**
+     * Returns a copy of the data in a [ByteArray].
+     */
+    fun toByteArray(): ByteArray {
+        return data.toByteArray()
+    }
+
+    /**
+     * Returns a copy of the data in a [Buffer].
+     */
+    fun toBuffer(): Buffer {
         val buffer = Buffer()
         buffer.write(data)
         return buffer
     }
 
+    /**
+     * Returns a copy of the data as a [String], decoded using the content type's charset, if specified, and otherwise
+     * the given fallback charset.
+     */
+    fun toContentString(fallbackCharset: Charset = Charsets.US_ASCII): String {
+        return data.decodeToString(contentType?.charset() ?: fallbackCharset)
+    }
+
+    /**
+     * Returns the string form of this URI. Since data URIs can get very long, it is recommended to use
+     * [toTruncatedString] when printing for debugging.
+     */
     fun toFullString(): String {
         return buildString {
             append("data:")
@@ -26,7 +76,12 @@ class DataUrl internal constructor(
         }
     }
 
-    fun toTrimmedString(maxBytes: Int = 30): String {
+    /**
+     * Returns a short string that represents this URI. When the data is longer than `maxBytes` (default is 30 bytes),
+     * then the data will be truncated and only `maxBytes` bytes will be written, ending the URI with `...` to indicate
+     * truncation.
+     */
+    fun toTruncatedString(maxBytes: Int = 30): String {
         return buildString {
             append("data:")
             append(contentType?.toBase64DataUrlPrefix() ?: "base64")
@@ -46,20 +101,22 @@ class DataUrl internal constructor(
     }
 
     override fun toString(): String {
-        return buildString {
-            append("data:")
-            append(contentType?.toBase64DataUrlPrefix() ?: "base64")
-            append(',')
-            append(Base64.Mime.encodeToAppendable(data, this))
-        }
+        return toFullString()
     }
 
     companion object {
-        fun fromStringOrNull(input: String): DataUrl? {
+        /**
+         * Parses a data URI from string, or returns `null` when the input is not a valid data URI.
+         */
+        fun fromStringOrNull(input: String): DataUri? {
             return parseDataUrl(input)
         }
 
-        fun fromString(input: String): DataUrl {
+        /**
+         * Parses a data URI from string, or throws an [IllegalArgumentException] when the input is not a valid data
+         * URI.
+         */
+        fun fromString(input: String): DataUri {
             return fromStringOrNull(input)
                 ?: throw IllegalArgumentException("Bad data URL: $input")
         }
@@ -86,7 +143,7 @@ private fun ContentType.toBase64DataUrlPrefix() = when {
     }
 }
 
-private fun parseDataUrl(str: String): DataUrl? {
+private fun parseDataUrl(str: String): DataUri? {
     var str = str
 
     if (!str.startsWith("data:")) {
@@ -131,7 +188,7 @@ private fun parseDataUrl(str: String): DataUrl? {
         return null // Decoding failed, so it's an incorrect format
     }
 
-    return DataUrl(decoded, contentType, str)
+    return DataUri(ByteString(decoded), contentType)
 }
 
 private fun decodeRaw(str: String, contentType: ContentType?): ByteArray? {
@@ -139,15 +196,15 @@ private fun decodeRaw(str: String, contentType: ContentType?): ByteArray? {
         val chs = contentType?.charset() ?: Charsets.US_ASCII
         val bytes = str.toByteArray(chs)
         return bytes
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         return null
     }
 }
 
 private fun decodeBase64(str: String): ByteArray? {
-    try {
-        return Base64.Mime.decode(str)
-    } catch (e: Exception) {
-        return null
+    return try {
+        Base64.Mime.decode(str)
+    } catch (_: Exception) {
+        null
     }
 }

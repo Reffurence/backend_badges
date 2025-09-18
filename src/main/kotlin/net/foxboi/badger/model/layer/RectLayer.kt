@@ -7,6 +7,15 @@ import net.foxboi.badger.model.dyn.Scope
 import net.foxboi.badger.util.Color
 import net.foxboi.badger.util.Length
 
+/**
+ * A layer that fills a rectangle with a solid color.
+ *
+ * @param x     The x coordinate to draw the rectangle at.
+ * @param y     The y coordinate to draw the rectangle at.
+ * @param w     The width of the rectangle.
+ * @param h     The height of the rectangle.
+ * @param color The fill color.
+ */
 class RectLayer(
     val x: Dyn<Length>,
     val y: Dyn<Length>,

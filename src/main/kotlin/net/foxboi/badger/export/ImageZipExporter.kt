@@ -12,12 +12,17 @@ import net.foxboi.badger.model.dyn.ScopeStack
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 
-object PngZipBatchExporter : BatchExporter {
-    override val contentType: ContentType
-        get() = ContentType.Application.Zip
+/**
+ * Abstract exporter for [Batch]es to ZIPs of image files.
+ */
+abstract class ImageZipExporter(
+    val format: EncodedImageFormat,
+    val quality: Int = 100
+) : Exporter<Batch> {
+    override val contentType = ContentType.Application.Zip
 
     override suspend fun export(
-        batch: Batch,
+        element: Batch,
         stack: ScopeStack,
         assets: AssetManager,
         out: ByteWriteChannel
@@ -26,10 +31,10 @@ object PngZipBatchExporter : BatchExporter {
         val cache = TemplateCache(assets)
 
         zip.use {
-            for ((name, entry) in batch.entries) {
-                val bmp = drawEntryToBitmap(batch, entry, stack, assets, cache) ?: continue
-                val png = Image.makeFromBitmap(bmp).encodeToData(EncodedImageFormat.PNG)
-                    ?: throw EngineException("Failed to convert to PNG")
+            for ((name, entry) in element.entries) {
+                val bmp = drawEntryToBitmap(element, entry, stack, assets, cache) ?: continue
+                val png = Image.makeFromBitmap(bmp).encodeToData(format, quality)
+                    ?: throw EngineException("Failed to convert to $format")
 
                 zip.add("$name.png") {
                     it.write(png.bytes)

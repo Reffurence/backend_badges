@@ -15,6 +15,9 @@ private fun clamp(u: UInt): Int {
     return clamp(u.toInt())
 }
 
+/**
+ * An RGBA color.
+ */
 class Color {
     val ri: Int
     val gi: Int

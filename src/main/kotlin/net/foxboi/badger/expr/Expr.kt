@@ -88,6 +88,9 @@ private fun opError(op: String, vararg vals: Value<*>): Nothing {
     error("Operator '$op' is not applicable to ${vals.joinToString(", ") { "'${it.type.name}'" }}")
 }
 
+/**
+ * An unevaluated expression.
+ */
 class Expr internal constructor(
     internal val ops: IntArray,
     internal val consts: List<Value<*>>,

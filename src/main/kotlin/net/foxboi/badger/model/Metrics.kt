@@ -2,6 +2,10 @@ package net.foxboi.badger.model
 
 import kotlin.math.round
 
+/**
+ * The metrics of a [Template]. The metrics determines the size of a template in both pixels and inches, and
+ * consequently it determines how lengths in a template convert to pixels.
+ */
 class Metrics private constructor(
     val wdtPx: Int,
     val hgtPx: Int,

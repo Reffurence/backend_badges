@@ -7,6 +7,9 @@ build/
 run/
 !**/src/main/**/run/
 !**/src/test/**/run/
+logs/
+!**/src/main/**/logs/
+!**/src/test/**/logs/
 
 ### IntelliJ IDEA ###
 .idea/

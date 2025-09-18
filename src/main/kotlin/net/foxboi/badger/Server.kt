@@ -7,9 +7,13 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonPrimitive
 import net.foxboi.badger.export.*
+import net.foxboi.badger.model.Batch
+import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.LocalScope
 import net.foxboi.badger.model.dyn.Scope
 import net.foxboi.badger.model.dyn.ScopeStack
@@ -20,36 +24,48 @@ import net.foxboi.badger.serial.SerialDyn
 import net.foxboi.badger.serial.batch.SerialBatch
 import net.foxboi.badger.serial.template.SerialTemplate
 
-class Server(
-    val port: Int = 80,
-    val host: String = "0.0.0.0"
-) {
+/**
+ * The Badger HTTP server.
+ */
+class Server {
     private lateinit var server: EmbeddedServer<*, *>
 
+    /**
+     * Starts the server.
+     */
     suspend fun start() {
-        val asset = Badger.config.router
-        val router = if (asset == null) {
-            Log.warn { "No routing was set in config" }
-            null
-        } else {
-            val text = Badger.assets.text(asset)
-            try {
-                Badger.yaml.decodeFromString<Router>(text)
-            } catch (e: Exception) {
-                throw ConfigException("Failed to load router", e)
+        val router = withContext(Dispatchers.IO) {
+            val asset = Badger.config.router
+
+            if (asset == null) {
+                Log.warn { "No routing was set in config" }
+                null
+            } else {
+                val text = Badger.assets.text(asset)
+                try {
+                    Badger.yaml.decodeFromString<Router>(text)
+                } catch (e: Exception) {
+                    throw ConfigException("Failed to load router", e)
+                }
             }
         }
 
-        server = embeddedServer(CIO, port = port, host = host) {
+        server = embeddedServer(CIO, port = Badger.config.port, host = Badger.config.host) {
             routing { configRouting(router) }
         }
+
         server.startSuspend(wait = true)
     }
 
+    /**
+     * Stops the server.
+     */
     fun stop() {
+        if (!::server.isInitialized) {
+            Log.warn { "Server stopped before it was started" }
+        }
         server.stop()
     }
-
 
     private suspend fun ApplicationCall.matchVarsFromBody(route: Route): Scope {
         val data = receive<Map<String, JsonPrimitive>>()
@@ -102,23 +118,23 @@ class Server(
         return scope
     }
 
-    private fun ApplicationCall.getProperTemplateExporter(): TemplateExporter {
+    private fun ApplicationCall.getProperTemplateExporter(): Exporter<Template> {
         val q = request.queryParameters
         val fmt = q["format"] ?: "png"
         return when (fmt) {
-            "pdf" -> PdfTemplateExporter
-            "png" -> PngTemplateExporter
+            "pdf" -> Pdf
+            "png" -> Png
             else -> throw BadRequestException("Unsupported format: '$fmt'")
         }
     }
 
-    private fun ApplicationCall.getProperBatchExporter(): BatchExporter {
+    private fun ApplicationCall.getProperBatchExporter(): Exporter<Batch> {
         val q = request.queryParameters
         val fmt = q["format"] ?: "hugepdf"
         return when (fmt) {
-            "hugepdf" -> HugePdfBatchExporter
-            "pngzip" -> PngZipBatchExporter
-            "pdfzip" -> PdfZipBatchExporter
+            "hugepdf" -> HugePdf
+            "pngzip" -> PngZip
+            "pdfzip" -> PdfZip
             else -> throw BadRequestException("Unsupported format: '$fmt'")
         }
     }
@@ -136,7 +152,7 @@ class Server(
                 val serial = Badger.yaml.decodeFromString<SerialTemplate>(yml)
                 val template = serial.instantiate()
 
-                call.getProperTemplateExporter().respondTo(call, template, stack, Badger.assets)
+                call.respondExported(template, call.getProperTemplateExporter(), stack)
             }
         }
 
@@ -152,7 +168,7 @@ class Server(
                 val serial = Badger.yaml.decodeFromString<SerialBatch>(yml)
                 val batch = serial.instantiate()
 
-                call.getProperBatchExporter().respondTo(call, batch, stack, Badger.assets)
+                call.respondExported(batch, call.getProperBatchExporter(), stack)
             }
         }
     }

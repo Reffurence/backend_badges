@@ -7,6 +7,9 @@ import net.foxboi.badger.asset.AssetManager
 import net.foxboi.badger.model.Template
 import net.foxboi.badger.serial.template.SerialTemplate
 
+/**
+ * Caches loaded [Template]s during a batch export.
+ */
 class TemplateCache(val assets: AssetManager) {
     private val cache = mutableMapOf<Asset, Template>()
 

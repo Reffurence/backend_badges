@@ -6,36 +6,37 @@ import kotlinx.io.buffered
 import kotlinx.io.files.SystemFileSystem
 import net.foxboi.badger.Badger
 import net.foxboi.badger.asset.AssetManager
-import net.foxboi.badger.model.Batch
+import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.ScopeStack
 
-object HugePdfBatchExporter : BatchExporter {
+/**
+ * Exports templates to PDF.
+ */
+object Pdf : Exporter<Template> {
     override val contentType: ContentType
         get() = ContentType.Application.Pdf
 
     override suspend fun export(
-        batch: Batch,
+        element: Template,
         stack: ScopeStack,
         assets: AssetManager,
         out: ByteWriteChannel
     ) {
-        val pdf = Badger.pdf.getBuilder()
-        val cache = TemplateCache(assets)
+        val bmp = drawTemplateToBitmap(element, stack, assets)
 
-        pdf.use {
-            for ((_, entry) in batch.entries) {
-                val bmp = drawEntryToBitmap(batch, entry, stack, assets, cache) ?: continue
-                pdf.add(bmp)
-            }
+        val builder = Badger.pdf.getBuilder()
+
+        builder.use {
+            builder.add(bmp)
         }
 
-        val outPath = pdf.outputPath
+        val outPath = builder.outputPath
 
         SystemFileSystem
             .source(outPath)
             .buffered()
             .use { it.transferTo(out.asSink()) }
 
-        pdf.delete()
+        builder.delete()
     }
 }

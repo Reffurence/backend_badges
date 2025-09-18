@@ -9,12 +9,15 @@ import net.foxboi.badger.asset.AssetManager
 import net.foxboi.badger.model.Batch
 import net.foxboi.badger.model.dyn.ScopeStack
 
-object PdfZipBatchExporter : BatchExporter {
+/**
+ * Exports batches to a ZIP of PDFs.
+ */
+object PdfZip : Exporter<Batch> {
     override val contentType: ContentType
         get() = ContentType.Application.Zip
 
     override suspend fun export(
-        batch: Batch,
+        element: Batch,
         stack: ScopeStack,
         assets: AssetManager,
         out: ByteWriteChannel
@@ -23,8 +26,8 @@ object PdfZipBatchExporter : BatchExporter {
         val cache = TemplateCache(assets)
 
         zip.use {
-            for ((name, entry) in batch.entries) {
-                val bmp = drawEntryToBitmap(batch, entry, stack, assets, cache) ?: continue
+            for ((name, entry) in element.entries) {
+                val bmp = drawEntryToBitmap(element, entry, stack, assets, cache) ?: continue
 
                 val pdf = Badger.pdf.getBuilder()
                 pdf.use { it.add(bmp) }

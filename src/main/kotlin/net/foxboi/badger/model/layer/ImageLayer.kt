@@ -7,6 +7,15 @@ import net.foxboi.badger.model.dyn.Dyn
 import net.foxboi.badger.model.dyn.Scope
 import net.foxboi.badger.util.Length
 
+/**
+ * A layer that draws an image.
+ *
+ * @param x     The x coordinate to draw the image at.
+ * @param y     The y coordinate to draw the image at.
+ * @param w     The width to draw the image with.
+ * @param h     The height to draw the image with.
+ * @param image The image asset.
+ */
 class ImageLayer(
     val x: Dyn<Length>,
     val y: Dyn<Length>,

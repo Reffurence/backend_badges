@@ -1,7 +1,7 @@
 package net.foxboi.badger
 
 /**
- * An exception that is passed to the client a 400 HTTP code.
+ * An exception that is generated when an export fails.
  */
 open class EngineException : Exception {
     constructor() : super()

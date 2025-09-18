@@ -8,19 +8,26 @@ import net.foxboi.badger.model.dyn.ScopeStack
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 
-object PngTemplateExporter : TemplateExporter {
-    override val contentType = ContentType.Image.PNG
+/**
+ * Abstract exporter for [Template]s to image files.
+ */
+abstract class ImageExporter(
+    override val contentType: ContentType,
+    val format: EncodedImageFormat,
+    val quality: Int = 100
+) : Exporter<Template> {
 
     override suspend fun export(
-        template: Template,
+        element: Template,
         stack: ScopeStack,
         assets: AssetManager,
         out: ByteWriteChannel
     ) {
-        val bmp = drawTemplateToBitmap(template, stack, assets)
+        val bmp = drawTemplateToBitmap(element, stack, assets)
 
         val img = Image.makeFromBitmap(bmp)
-        val data = img.encodeToData(EncodedImageFormat.PNG) ?: throw RuntimeException("Failed to encode PNG")
+        val data = img.encodeToData(format, quality)
+            ?: throw RuntimeException("Failed to encode $format")
 
         out.writeByteArray(data.bytes)
     }

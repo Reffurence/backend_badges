@@ -10,6 +10,9 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.io.path.outputStream
 
+/**
+ * A builder that writes files to a ZIP archive and then writes the archive to a given output file.
+ */
 class ZipBuilder(val outputPath: Path) : AutoCloseable {
     init {
         val par = outputPath.parent

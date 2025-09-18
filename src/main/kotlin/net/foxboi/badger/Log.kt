@@ -6,6 +6,10 @@ import org.apache.logging.log4j.Logger
 object Log {
     val logger: Logger = LogManager.getLogger("net.foxboi.badger")
 
+    fun shutdown() {
+        LogManager.shutdown()
+    }
+
     inline fun debug(msg: () -> String) {
         if (logger.isDebugEnabled) logger.debug(msg())
     }

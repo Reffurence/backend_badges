@@ -10,6 +10,20 @@ import net.foxboi.badger.model.dyn.Scope
 import net.foxboi.badger.util.Color
 import net.foxboi.badger.util.Length
 
+/**
+ * A layer that draws text. When `scaleToWidth` is specified, the text will be scaled down to fit this width if the
+ * text wider than this width.
+ *
+ * @param text         The text to draw.
+ * @param font         The asset of the font to draw the text with.
+ * @param x            The x coordinate of the text anchor.
+ * @param y            The y coordinate of the text anchor.
+ * @param size         The font size.
+ * @param hAlign       The horizontal text alignment, relative to the anchor point.
+ * @param vAlign       The vetical text alignment, relative to the anchor point.
+ * @param scaleToWidth An optional max width, text will be scaled down if wider.
+ * @param color        The text color.
+ */
 class TextLayer(
     val text: Dyn<String>,
     val font: Dyn<Asset>,

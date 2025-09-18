@@ -6,6 +6,9 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * A serializer for [Path] objects, as Kotlin does not specify any itself.
+ */
 object PathSerializer : KSerializer<Path> {
     override val descriptor = String.serializer().descriptor
 
