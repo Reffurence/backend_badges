@@ -8,7 +8,7 @@ services:
       - ./example_config.yml:/example_config.yml
       - ./example_assets:/example_assets
     ports:
-      - "80:80"
+      - "80:3361"
     networks:
       - dev-badges-internal
 
