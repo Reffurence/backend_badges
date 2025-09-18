@@ -38,14 +38,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-    name: prod-badges
-    namespace: prod-backend
+    name: dev-badges
+    namespace: dev-backend
     labels:
-        app: prod-badges
+        app: dev-badges
 spec:
     type: ClusterIP
     selector:
-        app: prod-badges
+        app: dev-badges
     ports:
         - name: http
           port: 80
