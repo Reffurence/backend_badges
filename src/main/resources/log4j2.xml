@@ -14,7 +14,7 @@
             <AppenderRef ref="CONSOLE" level="WARN"/>
         </Root>
 
-        <Logger name="net.foxboi.mlem" level="DEBUG">
+        <Logger name="net.foxboi.badger" level="DEBUG">
             <AppenderRef ref="CONSOLE" level="INFO"/>
         </Logger>
     </Loggers>

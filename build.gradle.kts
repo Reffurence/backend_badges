@@ -12,7 +12,7 @@ group = "net.foxboi"
 version = "0.1"
 
 application {
-    mainClass = "net.foxboi.mlem.MainKt"
+    mainClass = "net.foxboi.badger.MainKt"
 }
 
 idea {
