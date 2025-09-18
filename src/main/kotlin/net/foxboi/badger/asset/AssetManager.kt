@@ -114,12 +114,11 @@ class AssetManager(
     }
 
     suspend fun open(asset: Asset): Source {
-        val path = when (asset) {
-            is Asset.Download -> download(asset.url)
-            is Asset.Local -> resolve(asset.path)
+        return when (asset) {
+            is Asset.Fetch -> SystemFileSystem.source(download(asset.url)).buffered()
+            is Asset.Local -> SystemFileSystem.source(resolve(asset.path)).buffered()
+            is Asset.Data -> asset.url.copyToBuffer()
         }
-
-        return SystemFileSystem.source(path).buffered()
     }
 
     suspend fun text(asset: Asset, charset: Charset = Charsets.UTF_8): String {
