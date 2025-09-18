@@ -14,4 +14,4 @@ COPY . .
 RUN ./gradlew installDist
 
 WORKDIR /
-CMD ["bash", "/src/build/install/mlem/bin/mlem"]
+CMD ["bash", "/src/build/install/badger/bin/badger"]
