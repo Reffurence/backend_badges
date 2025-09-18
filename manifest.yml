@@ -13,14 +13,14 @@ spec:
         type: RollingUpdate
     selector:
         matchLabels:
-            app: dev-backend
+            app: dev-badges
     template:
         metadata:
             labels:
-                app: dev-backend
+                app: dev-badges
         spec:
             containers:
-                - name: dev-backend
+                - name: dev-badges
                   image: rfrdockerregistery.azurecr.io/rfr_backend_badges:main
                   imagePullPolicy: Always
                   ports:
@@ -68,14 +68,14 @@ spec:
         type: RollingUpdate
     selector:
         matchLabels:
-            app: prod-backend
+            app: prod-badges
     template:
         metadata:
             labels:
-                app: prod-backend
+                app: prod-badges
         spec:
             containers:
-                - name: prod-backend
+                - name: prod-badges
                   image: rfrdockerregistery.azurecr.io/rfr_backend_badges:main
                   imagePullPolicy: Always
                   ports:
