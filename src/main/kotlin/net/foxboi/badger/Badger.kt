@@ -69,7 +69,7 @@ object Badger {
         server.start()
     }
 
-    private fun stop() {
+    fun stop() {
         Log.info { "Terminated, kthxbye" }
         server.stop()
         assets.close()
