@@ -1,5 +1,6 @@
 services:
   badger:
+    image: rfrdockerregistery.azurecr.io/rfr_backend_badges:main
     build: .
     environment:
       CONFIG_PATH: /example_config.yml
@@ -8,3 +9,8 @@ services:
       - ./example_assets:/example_assets
     ports:
       - "80:80"
+    networks:
+      - dev-badges-internal
+
+networks:
+    dev-badges-internal:      
