@@ -87,7 +87,7 @@ class AssetManager(
 
         val uuid = uuid()
         val path = Path(tmpDir, uuid)
-        val newEntry = CacheEntry(url, uuid, path, Badger.time())
+        val newEntry = CacheEntry(url, uuid, path, Badger.time(), cacheTtl)
 
         urlCache[url] = newEntry
         uuidCache[uuid] = newEntry
@@ -100,8 +100,7 @@ class AssetManager(
     private suspend fun download(url: Url): Path {
         val entry = entry(url)
 
-        // Cache hit? Then just
-        if (!entry.isOutdated(cacheTtl) && SystemFileSystem.exists(entry.path)) {
+        if (!entry.isOutdated() && SystemFileSystem.exists(entry.path)) {
             return entry.path
         }
 
@@ -111,6 +110,10 @@ class AssetManager(
         if (response.status != HttpStatusCode.OK) {
             throw DownloadException("Failed downloading $url: Received status code '${response.status}' but expected '${HttpStatusCode.OK}'")
         }
+
+        val age = (response.headers["Age"]?.toLongOrNull() ?: 0L) * 1000L
+        val ttl = computeTtl(cacheTtl, age, response.cacheControl())
+        entry.ttl = ttl
 
         entry.sink().use {
             // Write body to sink
@@ -180,8 +183,8 @@ class AssetManager(
         client.close()
     }
 
-    private class CacheEntry(val url: Url, val uuid: String, val path: Path, val timestamp: Long) {
-        fun isOutdated(ttl: Long): Boolean {
+    private class CacheEntry(val url: Url, val uuid: String, val path: Path, val timestamp: Long, var ttl: Long) {
+        fun isOutdated(): Boolean {
             return Badger.time() > timestamp + ttl
         }
 
