@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "net.foxboi"
-version = "1.0.0-beta.0"
+version = "1.0-beta.1"
 
 application {
     mainClass = "net.foxboi.badger.MainKt"
