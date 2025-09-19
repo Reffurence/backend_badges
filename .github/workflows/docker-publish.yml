@@ -49,3 +49,5 @@ jobs:
                       NPM_TOKEN=${{ secrets.AZURE_CREDENTIALS }}
             - name: Portainer webhook
               run: curl -sS -X POST "${{ secrets.PORTAINER_WEBHOOK }}?RESTART_AT=$(date -u +%s)"
+            - name: DockerSwarm webhook
+              run: curl -sS -X POST "${{ secrets.SWARM_WEBHOOK }}?RESTART_AT=$(date -u +%s)"
