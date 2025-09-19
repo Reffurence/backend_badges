@@ -86,7 +86,7 @@ spec:
                 - effect: NoSchedule
                   key: app
                   operator: Equal
-                  value: develop
+                  value: prodbackend
 
 ---
 # Service to reach the application on the cluster
