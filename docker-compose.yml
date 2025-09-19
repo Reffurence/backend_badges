@@ -5,8 +5,8 @@ services:
     environment:
       CONFIG_PATH: /example_config.yml
     volumes:
-      #- ./example_config.yml:/example_config.yml
-      #- ./example_assets:/example_assets
+      - ./example_config.yml:/example_config.yml
+      - ./example_assets:/example_assets
     ports:
       - "3361:80"
     networks:
