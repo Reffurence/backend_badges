@@ -1,6 +1,7 @@
 package net.foxboi.badger.graphics
 
 import net.foxboi.badger.asset.Asset
+import net.foxboi.badger.graphics.shape.Shape
 
 /**
  * A badge graphics context.
@@ -69,6 +70,13 @@ interface Context {
     fun drawImage(image: Image, x: Double, y: Double, w: Double, h: Double)
 
     /**
+     * Draw an image with given [Shape], scaling if the image is not the same size.
+     * @param image The image to draw.
+     * @param shape The shape of the image.
+     */
+    fun drawImage(image: Image, shape: Shape)
+
+    /**
      * Creates a [Text] object with given font, text and size. This [Text] object can then be drawn over and over
      * using [drawText].
      *
@@ -90,7 +98,12 @@ interface Context {
      */
     fun drawText(text: Text, x: Double, y: Double)
 
-    fun drawRect(x: Double, y: Double, w: Double, h: Double)
+    /**
+     * Draws the given [Shape].
+     *
+     * @param shape The shape to draw.
+     */
+    fun drawShape(shape: Shape)
 
     /**
      * Forks this context for a new, empty canvas of given dimensions. It will supply this context to [drawing], in

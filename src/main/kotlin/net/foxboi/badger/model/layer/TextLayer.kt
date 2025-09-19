@@ -3,6 +3,7 @@ package net.foxboi.badger.model.layer
 import net.foxboi.badger.asset.Asset
 import net.foxboi.badger.graphics.Context
 import net.foxboi.badger.graphics.HAlign
+import net.foxboi.badger.graphics.Stroke
 import net.foxboi.badger.graphics.VAlign
 import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.Dyn
@@ -67,6 +68,7 @@ class TextLayer(
 
         ctx.apply {
             color = col.argb
+            stroke = Stroke.none()
             ctx.drawText(text, x, y)
         }
     }

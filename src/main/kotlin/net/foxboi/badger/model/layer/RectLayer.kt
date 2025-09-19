@@ -1,10 +1,10 @@
 package net.foxboi.badger.model.layer
 
 import net.foxboi.badger.graphics.Context
+import net.foxboi.badger.graphics.shape.RRect
 import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.Dyn
 import net.foxboi.badger.model.dyn.Scope
-import net.foxboi.badger.util.Color
 import net.foxboi.badger.util.Length
 
 /**
@@ -14,15 +14,14 @@ import net.foxboi.badger.util.Length
  * @param y     The y coordinate to draw the rectangle at.
  * @param w     The width of the rectangle.
  * @param h     The height of the rectangle.
- * @param color The fill color.
  */
 class RectLayer(
     val x: Dyn<Length>,
     val y: Dyn<Length>,
     val w: Dyn<Length>,
     val h: Dyn<Length>,
-    val color: Dyn<Color>,
-) : Layer() {
+    val r: Dyn<Length> = Dyn.const(Length.zero),
+) : PaintedLayer() {
     override suspend fun drawLayer(
         ctx: Context,
         scope: Scope,
@@ -34,12 +33,10 @@ class RectLayer(
         val x = template.toX(x via scope, w)
         val y = template.toY(y via scope, h)
 
-        val col = color via scope
+        val r = template.toX(r via scope, h)
 
-        ctx.apply {
-            color = col.argb
-
-            drawRect(x, y, w, h)
+        ctx.eachPaint(scope, template) {
+            drawShape(RRect(x, y, w, h, r))
         }
     }
 }

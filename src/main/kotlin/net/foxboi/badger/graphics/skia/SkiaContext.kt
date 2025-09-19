@@ -7,6 +7,10 @@ import net.foxboi.badger.asset.AssetManager
 import net.foxboi.badger.graphics.*
 import net.foxboi.badger.graphics.Font
 import net.foxboi.badger.graphics.Image
+import net.foxboi.badger.graphics.shape.Oval
+import net.foxboi.badger.graphics.shape.RRect
+import net.foxboi.badger.graphics.shape.Rect
+import net.foxboi.badger.graphics.shape.Shape
 import org.jetbrains.skia.*
 import org.jetbrains.skia.shaper.Shaper
 import org.jetbrains.skia.Font as SkFont
@@ -123,12 +127,25 @@ class SkiaContext(
     }
 
     override fun drawImage(image: Image, x: Double, y: Double, w: Double, h: Double) {
+        drawImage(image, Rect(x, y, w, h))
+    }
+
+    override fun drawImage(image: Image, shape: Shape) {
         val img = image.skia.image
 
-        val src = Rect(0f, 0f, image.w.toFloat(), image.h.toFloat())
-        val dst = Rect(x.toFloat(), y.toFloat(), (x + w).toFloat(), (y + h).toFloat())
+        val (x, y, w, h) = shape.boundingRect
 
-        canvas.drawImageRect(img, src, dst, FilterMipmap(FilterMode.LINEAR, MipmapMode.LINEAR), imagePaint, true)
+        val sw = w.toFloat() / image.w.toFloat()
+        val sh = h.toFloat() / image.h.toFloat()
+
+        val paint = imagePaint
+        paint.shader = img.makeShader(
+            localMatrix = Matrix33.makeTranslate(x.toFloat(), y.toFloat())
+                .makeConcat(Matrix33.makeScale(sw, sh)),
+            sampling = SamplingMode.CATMULL_ROM
+        )
+
+        drawShape(shape, imagePaint)
     }
 
 
@@ -149,13 +166,27 @@ class SkiaContext(
         canvas.drawTextBlob(sk.textBlob, nx.toFloat(), ny.toFloat(), shapePaint)
     }
 
-    override fun drawRect(x: Double, y: Double, w: Double, h: Double) {
-        canvas.drawRect(
-            Rect(
-                x.toFloat(), y.toFloat(),
-                (x + w).toFloat(), (y + h).toFloat()
-            ), shapePaint
-        )
+    override fun drawShape(shape: Shape) {
+        drawShape(shape, shapePaint)
+    }
+
+    private fun drawShape(shape: Shape, paint: Paint) {
+        when (shape) {
+            is Oval -> canvas.drawOval(
+                shape.toSkiaOval(),
+                paint
+            )
+
+            is Rect -> canvas.drawRect(
+                shape.toSkiaRect(),
+                paint
+            )
+
+            is RRect -> canvas.drawRRect(
+                shape.toSkiaRRect(),
+                paint
+            )
+        }
     }
 
     override suspend fun drawToImage(w: Int, h: Int, drawing: suspend Context.() -> Unit): Image {
