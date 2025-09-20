@@ -8,4 +8,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 class Router(
     val routes: Map<String, Route> = mapOf()
-)
+) {
+    fun route(route: String) = routes[route]
+}
