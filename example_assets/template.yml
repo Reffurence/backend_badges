@@ -6,17 +6,43 @@ vars:
 layers:
   - !<rect>
     rect: [
+      0px, 0px,
+      100%, 100%
+    ]
+    color: (#FFF)
+
+  - !<rect>
+    rect: [
       $margin, $margin,
       100% - 2*$margin, 100% - 2*$margin
     ]
-    color: (#F00)
+    rounding: 10px
+    paint:
+      - !<fill>
+        color: (#F00)
+      - !<stroke>
+        color: (#F0F)
+        width: 5px
 
   - !<image>
     rect: [
       50px, 50px,
       100% - 100px, 100% - 100px
     ]
+    rounding: 10px
     image: $img
+
+
+  - !<rect>
+    rect: [
+      50px, 50px,
+      100% - 100px, 100% - 100px
+    ]
+    rounding: 10px
+    paint:
+      - !<stroke>
+        color: (#000)
+        width: 3px
 
   - !<text>
     text: Design is coming

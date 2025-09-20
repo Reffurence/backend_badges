@@ -1,5 +1,6 @@
 package net.foxboi.badger
 
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
@@ -34,24 +35,8 @@ class Server {
      * Starts the server.
      */
     suspend fun start() {
-        val router = withContext(Dispatchers.IO) {
-            val asset = Badger.config.router
-
-            if (asset == null) {
-                Log.warn { "No routing was set in config" }
-                null
-            } else {
-                val text = Badger.assets.text(asset)
-                try {
-                    Badger.yaml.decodeFromString<Router>(text)
-                } catch (e: Exception) {
-                    throw ConfigException("Failed to load router", e)
-                }
-            }
-        }
-
         server = embeddedServer(CIO, port = Badger.config.port, host = Badger.config.host) {
-            routing { configRouting(router) }
+            routing { configRouting() }
         }
 
         server.startSuspend(wait = true)
@@ -120,67 +105,100 @@ class Server {
 
     private fun ApplicationCall.getProperTemplateExporter(): Exporter<Template> {
         val q = request.queryParameters
-        val fmt = q["format"] ?: "png"
-        return when (fmt) {
+        val fmt = q["-format"] ?: "png"
+        return when (fmt.lowercase()) {
             "pdf" -> Pdf
             "png" -> Png
+            "jpg", "jpeg" -> Jpeg
+            "webp" -> Webp
             else -> throw BadRequestException("Unsupported format: '$fmt'")
         }
     }
 
     private fun ApplicationCall.getProperBatchExporter(): Exporter<Batch> {
         val q = request.queryParameters
-        val fmt = q["format"] ?: "hugepdf"
-        return when (fmt) {
+        val fmt = q["-format"] ?: "hugepdf"
+        return when (fmt.lowercase()) {
             "hugepdf" -> HugePdf
             "pngzip" -> PngZip
+            "jpgzip", "jpegzip" -> JpegZip
+            "webpzip" -> WebpZip
             "pdfzip" -> PdfZip
             else -> throw BadRequestException("Unsupported format: '$fmt'")
         }
     }
 
-    private fun Routing.createEndpoint(path: String, route: Route) {
+    private suspend fun ApplicationCall.handleRoute(path: String, route: Route) {
         if (route.type == RouteType.TEMPLATE) {
-            get(path) {
-                Log.info { "GET $path" }
+            Log.info { "GET $path" }
 
-                val stack = ScopeStack()
-                stack.pushBack(call.matchVarsFromQuery(route))
+            val stack = ScopeStack()
+            stack.pushBack(matchVarsFromQuery(route))
 
-                val yml = Badger.assets.text(route.from)
+            val yml = Badger.assets.text(route.from)
 
-                val serial = Badger.yaml.decodeFromString<SerialTemplate>(yml)
-                val template = serial.instantiate()
+            val serial = Badger.yaml.decodeFromString<SerialTemplate>(yml)
+            val template = serial.instantiate()
 
-                call.respondExported(template, call.getProperTemplateExporter(), stack)
-            }
+            respondExported(template, getProperTemplateExporter(), stack)
         }
 
         if (route.type == RouteType.BATCH) {
-            get(path) {
-                Log.info { "GET $path" }
+            Log.info { "GET $path" }
 
-                val stack = ScopeStack()
-                stack.pushBack(call.matchVarsFromQuery(route))
+            val stack = ScopeStack()
+            stack.pushBack(matchVarsFromQuery(route))
 
-                val yml = Badger.assets.text(route.from)
+            val yml = Badger.assets.text(route.from)
 
-                val serial = Badger.yaml.decodeFromString<SerialBatch>(yml)
-                val batch = serial.instantiate()
+            val serial = Badger.yaml.decodeFromString<SerialBatch>(yml)
+            val batch = serial.instantiate()
 
-                call.respondExported(batch, call.getProperBatchExporter(), stack)
-            }
+            respondExported(batch, getProperBatchExporter(), stack)
         }
     }
 
-    private fun Routing.configRouting(router: Router?) {
-        get("/") {
-            call.respondText("Hi I am MLEM server")
-        }
+    private fun Routing.configRouting() {
+        get("/{route...}") {
+            try {
+                val routePath = call.parameters.getAll("route")
 
-        if (router != null) {
-            for ((path, route) in router.routes) {
-                createEndpoint(path, route)
+                if (routePath == null || routePath.isEmpty()) {
+                    call.respondText("-- Badger --\nHi I am Badger server")
+                } else {
+                    val routeString = routePath.joinToString("") { "/$it" }
+
+                    // TODO do something with caching to not have to reload the router all the time?
+                    val router = withContext(Dispatchers.IO) {
+                        val asset = Badger.config.router
+
+                        if (asset == null) {
+                            Log.warn { "No routing was set in config" }
+                            null
+                        } else {
+                            val text = Badger.assets.text(asset)
+                            try {
+                                Badger.yaml.decodeFromString<Router>(text)
+                            } catch (e: Exception) {
+                                throw ConfigException("Failed to load router", e)
+                            }
+                        }
+                    }
+
+                    val route = router?.route(routeString)
+
+                    when {
+                        router == null || route == null -> {
+                            call.respondText("-- Badger --\n404 Not Found", status = HttpStatusCode.NotFound)
+                        }
+
+                        else -> {
+                            call.handleRoute(routeString, route)
+                        }
+                    }
+                }
+            } catch (e: BadRequestException) {
+                call.respondText("-- Badger --\n400 Bad Request\n${e.message}", status = HttpStatusCode.BadRequest)
             }
         }
     }

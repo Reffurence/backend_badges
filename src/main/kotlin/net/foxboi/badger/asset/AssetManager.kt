@@ -18,20 +18,21 @@ import kotlinx.io.readByteArray
 import net.foxboi.badger.Badger
 import net.foxboi.badger.EngineException
 import net.foxboi.badger.Log
+import net.foxboi.badger.asset.src.AssetSrc
 import java.lang.AutoCloseable
 import java.nio.charset.Charset
 
 /**
  * The [AssetManager] manages the loading and caching of assets.
  *
- * @param assetDir The assets directory, where local assets are loaded from.
+ * @param source The assets directory, where local assets are loaded from.
  * @param tmpDir The assets directory, where local assets are loaded from.
  * @param cacheTtl Time to live of cache entries, i.e., how long cache entries are considered valid. In milliseconds.
  */
 class AssetManager(
-    val assetDir: Path,
+    val source: AssetSrc,
     val tmpDir: Path,
-    val cacheTtl: Long = 1000 * 60
+    val cacheTtl: Long = 1000 * 60,
 ) : AutoCloseable {
     private val client = HttpClient(CIO)
 
@@ -39,12 +40,10 @@ class AssetManager(
     private val uuidCache = mutableMapOf<String, CacheEntry>()
 
     /**
-     * Resolves a local asset as [Path].
+     * Check if an asset path exists.
      */
-    private fun resolve(path: String): Path {
-        val path = Path(assetDir, path)
-
-        if (!SystemFileSystem.exists(path)) {
+    private fun checkExists(path: String): String {
+        if (!source.exists(path)) {
             throw EngineException("No such asset: $path")
         }
 
@@ -87,7 +86,7 @@ class AssetManager(
 
         val uuid = uuid()
         val path = Path(tmpDir, uuid)
-        val newEntry = CacheEntry(url, uuid, path, Badger.time())
+        val newEntry = CacheEntry(url, uuid, path, Badger.time(), cacheTtl)
 
         urlCache[url] = newEntry
         uuidCache[uuid] = newEntry
@@ -100,8 +99,7 @@ class AssetManager(
     private suspend fun download(url: Url): Path {
         val entry = entry(url)
 
-        // Cache hit? Then just
-        if (!entry.isOutdated(cacheTtl) && SystemFileSystem.exists(entry.path)) {
+        if (!entry.isOutdated() && SystemFileSystem.exists(entry.path)) {
             return entry.path
         }
 
@@ -111,6 +109,10 @@ class AssetManager(
         if (response.status != HttpStatusCode.OK) {
             throw DownloadException("Failed downloading $url: Received status code '${response.status}' but expected '${HttpStatusCode.OK}'")
         }
+
+        val age = (response.headers["Age"]?.toLongOrNull() ?: 0L) * 1000L
+        val ttl = computeTtl(cacheTtl, age, response.cacheControl())
+        entry.ttl = ttl
 
         entry.sink().use {
             // Write body to sink
@@ -126,7 +128,7 @@ class AssetManager(
     suspend fun open(asset: Asset): Source {
         return when (asset) {
             is Asset.Remote -> SystemFileSystem.source(download(asset.url)).buffered()
-            is Asset.Local -> SystemFileSystem.source(resolve(asset.path)).buffered()
+            is Asset.Local -> source.read(checkExists(asset.path))
             is Asset.Data -> asset.uri.toBuffer()
         }
     }
@@ -177,11 +179,12 @@ class AssetManager(
      * Closes the HTTP client.
      */
     override fun close() {
+        source.close()
         client.close()
     }
 
-    private class CacheEntry(val url: Url, val uuid: String, val path: Path, val timestamp: Long) {
-        fun isOutdated(ttl: Long): Boolean {
+    private class CacheEntry(val url: Url, val uuid: String, val path: Path, val timestamp: Long, var ttl: Long) {
+        fun isOutdated(): Boolean {
             return Badger.time() > timestamp + ttl
         }
 

@@ -1,3 +1,5 @@
-assets_dir: ./example_assets
+asset_source: !<local>
+  directory: ./example_assets
+
 temp_dir: ./run
 router: asset://routing.yml

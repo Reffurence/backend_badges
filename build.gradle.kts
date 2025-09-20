@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.2.20"
-    kotlin("plugin.serialization") version "2.2.20"
+    kotlin("jvm")
+    kotlin("plugin.serialization")
 
     idea
     eclipse
@@ -8,11 +8,15 @@ plugins {
     application
 }
 
-group = "net.foxboi"
-version = "1.0.0-beta.0"
+val project_group: String by properties
+val project_version: String by properties
+
+group = project_group
+version = project_version
 
 application {
-    mainClass = "net.foxboi.badger.MainKt"
+    val main_class: String by properties
+    mainClass = main_class
 }
 
 idea {
@@ -36,58 +40,76 @@ repositories {
 }
 
 
-val osName: String = System.getProperty("os.name")
-val targetOs = when {
-    osName == "Mac OS X" -> "macos"
-    osName.startsWith("Win") -> "windows"
-    osName.startsWith("Linux") -> "linux"
-    else -> error("Unsupported OS: $osName")
+
+fun skikoArch(): String {
+    val osName: String = System.getProperty("os.name")
+    val targetOs = when {
+        osName == "Mac OS X" -> "macos"
+        osName.startsWith("Win") -> "windows"
+        osName.startsWith("Linux") -> "linux"
+        else -> error("Unsupported OS: $osName")
+    }
+
+    val targetArch = when (val osArch: String = System.getProperty("os.arch")) {
+        "x86_64", "amd64" -> "x64"
+        "aarch64" -> "arm64"
+        else -> error("Unsupported arch: $osArch")
+    }
+
+    return "$targetOs-$targetArch"
 }
 
-val targetArch = when (val osArch: String = System.getProperty("os.arch")) {
-    "x86_64", "amd64" -> "x64"
-    "aarch64" -> "arm64"
-    else -> error("Unsupported arch: $osArch")
+fun dep(name: String): Any? {
+    return properties["version_$name"]
 }
-
-val target = "$targetOs-$targetArch"
 
 dependencies {
     // Parser
-    implementation("org.antlr:antlr4:4.5")
+    implementation("org.antlr:antlr4:${dep("antlr")}")
     implementation(project(":parser"))
 
     // Skia
-    implementation("org.jetbrains.skiko:skiko:0.8.9")
-    runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-$target:0.8.9")
+    implementation("org.jetbrains.skiko:skiko:${dep("skiko")}")
+    runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-${skikoArch()}:${dep("skiko")}")
 
     // PDF
-    implementation("com.github.librepdf:openpdf:2.0.3")
+    implementation("com.github.librepdf:openpdf:${dep("openpdf")}")
 
     // Ktor
-    implementation("io.ktor:ktor-server-core:3.3.0")
-    implementation("io.ktor:ktor-server-cio:3.3.0")
-    implementation("io.ktor:ktor-client-core:3.3.0")
-    implementation("io.ktor:ktor-client-cio:3.3.0")
+    implementation("io.ktor:ktor-server-core:${dep("ktor")}")
+    implementation("io.ktor:ktor-server-cio:${dep("ktor")}")
+    implementation("io.ktor:ktor-client-core:${dep("ktor")}")
+    implementation("io.ktor:ktor-client-cio:${dep("ktor")}")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.21")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${dep("coroutines")}")
 
     // Serialisation
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${dep("serialization")}")
 
     // Logging
-    implementation("org.apache.logging.log4j:log4j-core:2.25.1")
-    implementation("org.apache.logging.log4j:log4j-api:2.25.1")
-    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.25.1")
+    implementation("org.apache.logging.log4j:log4j-core:${dep("log4j")}")
+    implementation("org.apache.logging.log4j:log4j-api:${dep("log4j")}")
+    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:${dep("log4j")}")
 
     // Kaml
-    implementation("com.charleskorn.kaml:kaml:0.96.0")
+    implementation("com.charleskorn.kaml:kaml:${dep("kaml")}")
 
+    // MinIO
+    implementation("io.minio:minio:${dep("minio")}") {
+        exclude(group = "org.apache.commons", module = "commons-compress")
+    }
+    // MinIO uses a vulnerable version of commons-compress,
+    // they fixed it recently by updating to commons-compress
+    // 1.28.0 but this has not yet been released. Let's manually
+    // replace it.
+    implementation("org.apache.commons:commons-compress:${dep("commons_compress")}")
+
+    // Testing
     testImplementation(kotlin("test"))
 }
 
-tasks.test {
+tasks.test.configure {
     useJUnitPlatform()
 }
 

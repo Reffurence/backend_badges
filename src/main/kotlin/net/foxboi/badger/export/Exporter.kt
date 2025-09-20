@@ -1,8 +1,8 @@
 package net.foxboi.badger.export
 
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import io.ktor.utils.io.*
 import net.foxboi.badger.Badger
 import net.foxboi.badger.asset.AssetManager
@@ -38,7 +38,7 @@ interface Exporter<E> {
  * @param assets   The [AssetManager] to load assets from.
  * @param status   The HTTP status code to respond.
  */
-suspend fun <E> RoutingCall.respondExported(
+suspend fun <E> ApplicationCall.respondExported(
     element: E,
     exporter: Exporter<E>,
     stack: ScopeStack = ScopeStack(),

@@ -11,9 +11,11 @@ import net.foxboi.badger.graphics.HAlign
 import net.foxboi.badger.graphics.VAlign
 import net.foxboi.badger.model.dyn.Dyn
 import net.foxboi.badger.model.layer.*
+import net.foxboi.badger.model.paint.Fill
 import net.foxboi.badger.serial.Serial
 import net.foxboi.badger.serial.SerialDyn
 import net.foxboi.badger.serial.SerialException
+import net.foxboi.badger.util.Length
 
 @Serializable
 sealed interface SerialLayer<L : Layer> : Serial<L> {
@@ -34,7 +36,9 @@ sealed interface SerialLayer<L : Layer> : Serial<L> {
 @Serializable
 class SerialRectLayer(
     val rect: List<SerialDyn>,
-    val color: SerialDyn,
+    val rounding: SerialDyn? = null,
+    val color: SerialDyn? = null,
+    val paint: List<SerialPaint> = mutableListOf(),
 
     override var name: String = "",
     override var visible: SerialDyn? = null,
@@ -44,13 +48,27 @@ class SerialRectLayer(
             throw SerialException("rect layer: 'rect' property must be an array with 4 elements, [x, y, width, height]")
         }
 
-        return RectLayer(
+        val layer = RectLayer(
             rect[0].instantiate(LenType),
             rect[1].instantiate(LenType),
             rect[2].instantiate(LenType),
             rect[3].instantiate(LenType),
-            color.instantiate(ColType),
+            rounding?.instantiate(LenType) ?: Dyn.const(Length.zero),
         )
+
+        if (color != null) {
+            if (!paint.isEmpty()) {
+                throw SerialException("rect layer: both 'color' and 'paint' specified")
+            }
+
+            layer.paints += Fill(color.instantiate(ColType))
+        } else {
+            for (paint in paint) {
+                layer.paints += paint.instantiate()
+            }
+        }
+
+        return layer
     }
 }
 
@@ -59,6 +77,8 @@ class SerialRectLayer(
 class SerialImageLayer(
     val rect: List<SerialDyn>,
     val image: SerialDyn,
+
+    val rounding: SerialDyn? = null,
 
     override var name: String = "",
     override var visible: SerialDyn? = null,
@@ -73,6 +93,7 @@ class SerialImageLayer(
             rect[1].instantiate(LenType),
             rect[2].instantiate(LenType),
             rect[3].instantiate(LenType),
+            rounding?.instantiate(LenType) ?: Dyn.const(Length.zero),
             image.instantiateAsset(),
         )
     }
@@ -124,6 +145,8 @@ class SerialSvgLayer(
     val rect: List<SerialDyn>,
     val image: SerialDyn,
 
+    val rounding: SerialDyn? = null,
+
     override var name: String = "",
     override var visible: SerialDyn? = null,
 ) : SerialLayer<SvgLayer> {
@@ -137,6 +160,7 @@ class SerialSvgLayer(
             rect[1].instantiate(LenType),
             rect[2].instantiate(LenType),
             rect[3].instantiate(LenType),
+            rounding?.instantiate(LenType) ?: Dyn.const(Length.zero),
             image.instantiateAsset(),
         )
     }
