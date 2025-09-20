@@ -105,20 +105,24 @@ class Server {
 
     private fun ApplicationCall.getProperTemplateExporter(): Exporter<Template> {
         val q = request.queryParameters
-        val fmt = q["format"] ?: "png"
-        return when (fmt) {
+        val fmt = q["-format"] ?: "png"
+        return when (fmt.lowercase()) {
             "pdf" -> Pdf
             "png" -> Png
+            "jpg", "jpeg" -> Jpeg
+            "webp" -> Webp
             else -> throw BadRequestException("Unsupported format: '$fmt'")
         }
     }
 
     private fun ApplicationCall.getProperBatchExporter(): Exporter<Batch> {
         val q = request.queryParameters
-        val fmt = q["format"] ?: "hugepdf"
-        return when (fmt) {
+        val fmt = q["-format"] ?: "hugepdf"
+        return when (fmt.lowercase()) {
             "hugepdf" -> HugePdf
             "pngzip" -> PngZip
+            "jpgzip", "jpegzip" -> JpegZip
+            "webpzip" -> WebpZip
             "pdfzip" -> PdfZip
             else -> throw BadRequestException("Unsupported format: '$fmt'")
         }
@@ -156,47 +160,46 @@ class Server {
 
     private fun Routing.configRouting() {
         get("/{route...}") {
-            val routePath = call.parameters.getAll("route")
+            try {
+                val routePath = call.parameters.getAll("route")
 
-            if (routePath == null || routePath.isEmpty()) {
-                call.respondText("-- Badger --\nHi I am Badger server")
-            } else {
-                val routeString = routePath.joinToString("") { "/$it" }
+                if (routePath == null || routePath.isEmpty()) {
+                    call.respondText("-- Badger --\nHi I am Badger server")
+                } else {
+                    val routeString = routePath.joinToString("") { "/$it" }
 
-                val router = withContext(Dispatchers.IO) {
-                    val asset = Badger.config.router
+                    // TODO do something with caching to not have to reload the router all the time?
+                    val router = withContext(Dispatchers.IO) {
+                        val asset = Badger.config.router
 
-                    if (asset == null) {
-                        Log.warn { "No routing was set in config" }
-                        null
-                    } else {
-                        val text = Badger.assets.text(asset)
-                        try {
-                            Badger.yaml.decodeFromString<Router>(text)
-                        } catch (e: Exception) {
-                            throw ConfigException("Failed to load router", e)
+                        if (asset == null) {
+                            Log.warn { "No routing was set in config" }
+                            null
+                        } else {
+                            val text = Badger.assets.text(asset)
+                            try {
+                                Badger.yaml.decodeFromString<Router>(text)
+                            } catch (e: Exception) {
+                                throw ConfigException("Failed to load router", e)
+                            }
+                        }
+                    }
+
+                    val route = router?.route(routeString)
+
+                    when {
+                        router == null || route == null -> {
+                            call.respondText("-- Badger --\n404 Not Found", status = HttpStatusCode.NotFound)
+                        }
+
+                        else -> {
+                            call.handleRoute(routeString, route)
                         }
                     }
                 }
-
-                val route = router?.route(routeString)
-
-                when {
-                    router == null || route == null -> {
-                        call.respondText("-- Badger --\n404 Not Found", status = HttpStatusCode.NotFound)
-                    }
-
-                    else -> {
-                        call.handleRoute(routeString, route)
-                    }
-                }
+            } catch (e: BadRequestException) {
+                call.respondText("-- Badger --\n400 Bad Request\n${e.message}", status = HttpStatusCode.BadRequest)
             }
         }
-//
-//        if (router != null) {
-//            for ((path, route) in router.routes) {
-//                createEndpoint(path, route)
-//            }
-//        }
     }
 }
