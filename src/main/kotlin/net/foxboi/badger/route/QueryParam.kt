@@ -13,5 +13,18 @@ import net.foxboi.badger.serial.SerialDyn
 @Serializable
 data class QueryParam(
     val type: ParamType,
-    val fallback: SerialDyn? = null
-)
+    val fallback: SerialDyn? = null,
+    val desc: String? = null
+) {
+    fun writeHelpLine(name: String): String {
+        return "$name: ${type.helpName}" + if (fallback != null) {
+            " (optional, default: ${fallback.value})"
+        } else {
+            " (required)"
+        } + if (desc != null) {
+            "    # $desc"
+        } else {
+            ""
+        }
+    }
+}

@@ -10,4 +10,21 @@ class Router(
     val routes: Map<String, Route> = mapOf()
 ) {
     fun route(route: String) = routes[route]
+
+    fun writeAvailableRoutes(): String {
+        return buildString {
+            append("Available routes:")
+            for ((name, _) in routes) {
+                append(" - $name\n")
+            }
+        }
+    }
+
+    fun writeAllHelp(): String {
+        return buildString {
+            for ((name, route) in routes) {
+                append(route.writeHelp(name))
+            }
+        }
+    }
 }

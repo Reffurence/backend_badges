@@ -12,30 +12,30 @@ import net.foxboi.badger.route.ParamType.STR
  * - How the parameter is converted: conversion to the parameter type is attempted unless the type is [ANY].
  */
 @Serializable
-enum class ParamType(val type: Type<*>?) {
+enum class ParamType(val type: Type<*>?, val helpName: String) {
     /**
      * The parameter must be null. Not particularly useful to use but it's an option.
      */
     @SerialName("null")
-    NULL(NullType),
+    NULL(NullType, "null"),
 
     /**
      * The parameter must be a boolean.
      */
     @SerialName("bool")
-    BOOL(BoolType),
+    BOOL(BoolType, "boolean"),
 
     /**
      * The parameter must be an integer.
      */
     @SerialName("int")
-    INT(IntType),
+    INT(IntType, "integer"),
 
     /**
      * The parameter must be a float.
      */
     @SerialName("float")
-    FLOAT(FloatType),
+    FLOAT(FloatType, "float"),
 
     /**
      * The parameter must be a string.
@@ -43,29 +43,29 @@ enum class ParamType(val type: Type<*>?) {
      * value, unless the value starts with a `$` or is entirely wrapped in parentheses, `(...)`.
      */
     @SerialName("str")
-    STR(StrType),
+    STR(StrType, "string"),
 
     /**
      * The parameter must be a length.
      */
     @SerialName("len")
-    LEN(LenType),
+    LEN(LenType, "length"),
 
     /**
      * The parameter must be an angle.
      */
     @SerialName("angle")
-    ANGLE(AngleType),
+    ANGLE(AngleType, "angle"),
 
     /**
      * The parameter must be a color.
      */
     @SerialName("col")
-    COL(ColType),
+    COL(ColType, "color"),
 
     /**
      * The parameter can be anything.
      */
     @SerialName("any")
-    ANY(null)
+    ANY(null, "any")
 }
