@@ -189,14 +189,14 @@ data class Config(
                 Badger.env("CONFIG_PATH") ?: Badger.property("net.foxboi.badger.config_path") ?: "badger.yml"
 
             var config = try {
-                val path = SystemFileSystem.resolve(Path(configPath))
+                val path = Path(configPath)
                 val parent = path.parent
 
                 if (SystemFileSystem.exists(path)) {
                     val json = SystemFileSystem.source(path).buffered().use { it.readText() }
                     loadFromYaml(json, parent)
                 } else {
-                    Log.info { "Config file at '$path' not found, using default config" }
+                    Log.info { "Config file not found at '$path', using default config" }
                     default
                 }
             } catch (e: Exception) {
