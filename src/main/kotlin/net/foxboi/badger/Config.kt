@@ -7,10 +7,7 @@ import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.files.SystemTemporaryDirectory
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.*
 import net.foxboi.badger.asset.Asset
 import net.foxboi.badger.asset.src.AssetSrc
 import net.foxboi.badger.asset.src.EmptyAssetSrc
@@ -47,12 +44,12 @@ data class Config(
 
         assetSourceType: AssetSrcType = AssetSrcType.EMPTY,
         assetsDir: Path?,
-        minioEndpoint: String? = null,
-        minioBucket: String? = null,
+        endpoint: String? = null,
+        bucket: String? = null,
         minioAccessKey: String? = null,
         minioSecretKey: String? = null,
         minioNoCredentials: Boolean = false,
-        minioAssetPrefix: String = "",
+        assetPrefix: String = "",
 
         tempDir: Path = Path(SystemTemporaryDirectory, "mlem"),
 
@@ -69,12 +66,12 @@ data class Config(
             )
 
             AssetSrcType.MINIO -> MinioAssetSrcConfig(
-                minioEndpoint,
+                endpoint,
                 minioAccessKey,
                 minioSecretKey,
-                minioBucket,
+                bucket,
                 minioNoCredentials,
-                minioAssetPrefix
+                assetPrefix
             )
         },
 
@@ -83,13 +80,13 @@ data class Config(
     )
 
     val assetSourceType get() = assetSource.type
-    val assetsDir get() = (assetSource as? LocalAssetSrcConfig)?.path
-    val minioEndpoint get() = (assetSource as? MinioAssetSrcConfig)?.endpoint
-    val minioBucket get() = (assetSource as? MinioAssetSrcConfig)?.bucket
-    val minioAccessKey get() = (assetSource as? MinioAssetSrcConfig)?.accessKey
-    val minioSecretKey get() = (assetSource as? MinioAssetSrcConfig)?.secretKey
-    val minioNoCredentials get() = (assetSource as? MinioAssetSrcConfig)?.noCredentials ?: false
-    val minioAssetPrefix get() = (assetSource as? MinioAssetSrcConfig)?.assetPrefix ?: ""
+    val assetsDir get() = assetSource.assetsDir
+    val assetEndpoint get() = assetSource.assetEndpoint
+    val assetBucket get() = assetSource.assetBucket
+    val minioAccessKey get() = assetSource.minioAccessKey
+    val minioSecretKey get() = assetSource.minioSecretKey
+    val minioNoCredentials get() = assetSource.minioNoCredentials
+    val assetPrefix get() = assetSource.assetPrefix
 
     init {
         if (port !in 0..0xFFFF)
@@ -108,8 +105,8 @@ data class Config(
 
     private fun resolveParent(parent: Path, config: AssetSrcConfig): AssetSrcConfig {
         return when (config) {
-            is LocalAssetSrcConfig -> if (config.path != null) {
-                LocalAssetSrcConfig(resolveParent(parent, config.path))
+            is LocalAssetSrcConfig -> if (config.assetsDir != null) {
+                LocalAssetSrcConfig(resolveParent(parent, config.assetsDir))
             } else {
                 config
             }
@@ -143,12 +140,12 @@ data class Config(
 
             Badger.env("ASSET_SOURCE")?.toAssetSrcType() ?: default.assetSourceType,
             Badger.env("ASSETS_DIR")?.toPath() ?: default.assetsDir,
-            Badger.env("MINIO_ENDPOINT") ?: default.minioEndpoint,
-            Badger.env("MINIO_BUCKET") ?: default.minioBucket,
+            Badger.env("ASSET_ENDPOINT") ?: default.assetEndpoint,
+            Badger.env("ASSET_BUCKET") ?: default.assetBucket,
             Badger.env("MINIO_ACCESS_KEY") ?: default.minioAccessKey,
             Badger.env("MINIO_SECRET_KEY") ?: default.minioSecretKey,
             Badger.env("MINIO_NO_CREDENTIALS")?.toBoolean() ?: default.minioNoCredentials,
-            Badger.env("MINIO_ASSET_PREFIX") ?: default.minioAssetPrefix,
+            Badger.env("ASSET_PREFIX") ?: default.assetPrefix,
 
             Badger.env("TEMP_DIR")?.toPath() ?: default.tempDir,
 
@@ -161,12 +158,12 @@ data class Config(
 
             Badger.property("net.foxboi.badger.asset_source")?.toAssetSrcType() ?: default.assetSourceType,
             Badger.property("net.foxboi.badger.assets_dir")?.toPath() ?: default.assetsDir,
-            Badger.property("net.foxboi.badger.minio_endpoint") ?: default.minioEndpoint,
-            Badger.property("net.foxboi.badger.minio_bucket") ?: default.minioBucket,
+            Badger.property("net.foxboi.badger.asset_endpoint") ?: default.assetEndpoint,
+            Badger.property("net.foxboi.badger.asset_bucket") ?: default.assetBucket,
             Badger.property("net.foxboi.badger.minio_access_key") ?: default.minioAccessKey,
             Badger.property("net.foxboi.badger.minio_secret_key") ?: default.minioSecretKey,
             Badger.property("net.foxboi.badger.minio_no_credentials")?.toBoolean() ?: default.minioNoCredentials,
-            Badger.property("net.foxboi.badger.minio_asset_prefix") ?: default.minioAssetPrefix,
+            Badger.property("net.foxboi.badger.asset_prefix") ?: default.assetPrefix,
 
             Badger.property("net.foxboi.badger.temp_dir")?.toPath() ?: default.tempDir,
 
@@ -230,12 +227,21 @@ enum class AssetSrcType {
 @Serializable
 sealed interface AssetSrcConfig {
     val type: AssetSrcType
+    val assetsDir: Path? get() = null
+    val assetEndpoint: String? get() = null
+    val assetBucket: String? get() = null
+    val minioAccessKey: String? get() = null
+    val minioSecretKey: String? get() = null
+    val minioNoCredentials: Boolean get() = false
+    val assetPrefix: String get() = ""
+
     fun open(): AssetSrc
 }
 
 @Serializable
 @SerialName("empty")
 object EmptyAssetSrcConfig : AssetSrcConfig {
+    @Transient
     override val type = AssetSrcType.EMPTY
 
     override fun open(): EmptyAssetSrc {
@@ -249,12 +255,13 @@ object EmptyAssetSrcConfig : AssetSrcConfig {
 @SerialName("local")
 class LocalAssetSrcConfig(
     @SerialName("directory")
-    val path: Path?
+    override val assetsDir: Path?
 ) : AssetSrcConfig {
+    @Transient
     override val type = AssetSrcType.LOCAL
 
-    override fun open() = if (path != null) {
-        val glob = SystemFileSystem.resolve(path)
+    override fun open() = if (assetsDir != null) {
+        val glob = SystemFileSystem.resolve(assetsDir)
         Log.info { "Loading assets from '$glob'" }
 
         LocalAssetSrc(glob)
@@ -268,38 +275,41 @@ class LocalAssetSrcConfig(
 @Serializable
 @SerialName("minio")
 class MinioAssetSrcConfig(
-    val endpoint: String? = null,
+    @SerialName("endpoint")
+    override val assetEndpoint: String? = null,
 
     @SerialName("access_key")
-    val accessKey: String? = null,
+    override val minioAccessKey: String? = null,
 
     @SerialName("secret_key")
-    val secretKey: String? = null,
+    override val minioSecretKey: String? = null,
 
-    val bucket: String? = null,
+    @SerialName("bucket")
+    override val assetBucket: String? = null,
 
     @SerialName("no_credentials")
-    val noCredentials: Boolean = false,
+    override val minioNoCredentials: Boolean = false,
 
     @SerialName("asset_prefix")
-    val assetPrefix: String = "",
+    override val assetPrefix: String = "",
 ) : AssetSrcConfig {
+    @Transient
     override val type = AssetSrcType.MINIO
 
     override fun open(): AssetSrc {
-        return if (bucket != null && endpoint != null) {
-            Log.info { "Connecting to MinIO endpoint '$endpoint', bucket '$bucket'" }
+        return if (assetBucket != null && assetEndpoint != null) {
+            Log.info { "Connecting to MinIO endpoint '$assetEndpoint', bucket '$assetBucket'" }
 
-            if (accessKey != null && secretKey != null && !noCredentials) {
-                MinioAssetSrc.connect(endpoint, bucket, accessKey, secretKey, assetPrefix)
+            if (minioAccessKey != null && minioSecretKey != null && !minioNoCredentials) {
+                MinioAssetSrc.connect(assetEndpoint, assetBucket, minioAccessKey, minioSecretKey, assetPrefix)
             } else {
-                if (!noCredentials) {
+                if (!minioNoCredentials) {
                     Log.warn { "Minio credentials have not been defined in config, attempting access without credentials." }
                     Log.warn { "To set credentials, provide 'access_key' and 'secret_key' under 'asset_source' in config or specify the 'MINIO_ACCESS_KEY' and 'MINIO_SECRET_KEY' environment variables." }
                     Log.warn { "To disable this warning, set 'no_credentials' under 'asset_source' in config or the 'MINIO_NO_CREDENTIALS' environment variable to 'true'." }
                 }
 
-                MinioAssetSrc.connect(endpoint, bucket, assetPrefix)
+                MinioAssetSrc.connect(assetEndpoint, assetBucket, assetPrefix)
             }
         } else {
             Log.error { "Minio endpoint and bucket have not been defined in config, asset source will be empty." }
