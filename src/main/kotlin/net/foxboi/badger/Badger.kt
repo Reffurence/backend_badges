@@ -36,7 +36,7 @@ object Badger {
      * The [AssetManager].
      */
     val assets = AssetManager(
-        assetDir = config.assetsDir,
+        source = config.assetSource.open(),
         tmpDir = Path(config.tempDir, "downloads")
     )
 

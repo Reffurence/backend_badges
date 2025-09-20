@@ -84,6 +84,16 @@ dependencies {
     // Kaml
     implementation("com.charleskorn.kaml:kaml:0.96.0")
 
+    // MinIO
+    implementation("io.minio:minio:8.5.17") {
+        exclude(group = "org.apache.commons", module = "commons-compress")
+    }
+    // MinIO uses a vulnerable version of commons-compress,
+    // they fixed it recently by updating to commons-compress
+    // 1.28.0 but this has not yet been released. Let's manually
+    // replace it.
+    implementation("org.apache.commons:commons-compress:1.28.0")
+
     testImplementation(kotlin("test"))
 }
 

@@ -11,6 +11,8 @@ logs/
 !**/src/main/**/logs/
 !**/src/test/**/logs/
 
+.env
+
 ### IntelliJ IDEA ###
 .idea/
 *.iws
