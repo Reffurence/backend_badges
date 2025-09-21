@@ -6,15 +6,15 @@ you.
 
 Badger's server endpoints are defined in the [router file](./router.md). The server simply
 serves exactly what is configured there.
-As of Badger version `1.0-beta.0`, the router can define two types of endpoints:
-template endpoints and batch endpoints.
-The input to these endpoint types works mostly the same, except the
-output is different.
+As of Badger version `1.0-beta.5`, the router can define three types of endpoints:
+template endpoints, batch endpoints and raw endpoints.
 
 Template endpoints generate a single image from a [template file](./templates.md).
 Batch endpoints generate multiple templates, as specified by a [batch file](./batches.md).
-Both endpoint types depend on query parameters for input. The exact query parameters
-recognised by each endpoint are specified in the router file.
+Raw endpoints serve an asset without any modification.
+Template and batch endpoint types depend on query parameters for input. The exact query parameters
+recognised by each endpoint are specified in the router file. Raw endpoints never take any inputs,
+they just serve files.
 
 ## The Root Endpoint
 
@@ -42,7 +42,7 @@ An example help output may be:
 ```
 -- Badger --
 # An example endpoint, these descriptions can all be set in the router file
-/endpoint:
+/endpoint:  (template)
  - parameter: any (required)    # An example query parameter
  - optional: int (optional, default: 0)    # An example optional parameter with type
 ```
@@ -90,7 +90,7 @@ text of the accessed endpoint:
 Missing required input parameter 'parameter'
 
 # An example endpoint, these descriptions can all be set in the router file
-/endpoint:
+/endpoint:  (template)
  - parameter: any (required)    # An example query parameter
  - optional: int (optional, default: 0)    # An example optional parameter with type
 ```

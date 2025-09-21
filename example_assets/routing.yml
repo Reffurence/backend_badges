@@ -11,3 +11,9 @@ routes:
     type: batch
     from: asset://batch.yml
     desc: Generates a batch file
+
+  /raw:
+    type: raw
+    from: asset://hambuwurg.png
+    mime: image/png
+    desc: Serves a raw asset

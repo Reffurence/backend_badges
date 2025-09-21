@@ -141,36 +141,42 @@ class Server {
         return sw.toString()
     }
 
-    private suspend fun ApplicationCall.handleRoute(path: String, route: Route) {
+    private suspend fun ApplicationCall.handleGet(path: String, route: Route) {
         try {
+            Log.info { "GET ${request.uri}  (${route.type.desc} route from ${route.from})" }
+
             if ("-help" in request.queryParameters) {
                 respondText(writeMessage {
                     println(route.writeHelp(path))
                 })
-            } else if (route.type == RouteType.TEMPLATE) {
-                Log.info { "GET $path" }
+            } else when (route.type) {
+                RouteType.TEMPLATE -> {
+                    val stack = ScopeStack()
+                    stack.pushBack(matchVarsFromQuery(route))
 
-                val stack = ScopeStack()
-                stack.pushBack(matchVarsFromQuery(route))
+                    val yml = Badger.assets.text(route.from)
 
-                val yml = Badger.assets.text(route.from)
+                    val serial = Badger.yaml.decodeFromString<SerialTemplate>(yml)
+                    val template = serial.instantiate()
 
-                val serial = Badger.yaml.decodeFromString<SerialTemplate>(yml)
-                val template = serial.instantiate()
+                    respondExported(template, getProperTemplateExporter(), stack)
+                }
 
-                respondExported(template, getProperTemplateExporter(), stack)
-            } else if (route.type == RouteType.BATCH) {
-                Log.info { "GET $path" }
+                RouteType.BATCH -> {
+                    val stack = ScopeStack()
+                    stack.pushBack(matchVarsFromQuery(route))
 
-                val stack = ScopeStack()
-                stack.pushBack(matchVarsFromQuery(route))
+                    val yml = Badger.assets.text(route.from)
 
-                val yml = Badger.assets.text(route.from)
+                    val serial = Badger.yaml.decodeFromString<SerialBatch>(yml)
+                    val batch = serial.instantiate()
 
-                val serial = Badger.yaml.decodeFromString<SerialBatch>(yml)
-                val batch = serial.instantiate()
+                    respondExported(batch, getProperBatchExporter(), stack)
+                }
 
-                respondExported(batch, getProperBatchExporter(), stack)
+                RouteType.RAW -> {
+                    respondSource(Badger.assets.open(route.from), contentType = route.contentType)
+                }
             }
         } catch (e: BadRequestException) {
             val msg = writeMessage {
@@ -270,7 +276,7 @@ class Server {
                         }
 
                         else -> {
-                            call.handleRoute(routeString, route)
+                            call.handleGet(routeString, route)
                         }
                     }
                 }
