@@ -1,4 +1,4 @@
-# Using the Server
+# Making HTTP Requests to Badger
 
 Badger is an HTTP server. Based on configuration, it will serve various endpoints. When
 you're developing an application on top of Badger, this page is the most relevant to

@@ -4,8 +4,8 @@ routes:
     from: asset://template.yml
     desc: Generates a template file
     params:
-      margin: { type: len, desc: A margin }
-      img: { type: str, desc: An image URL }
+      margin: { type: len, desc: A margin, fallback: (15px) }
+      img: { type: str, desc: An image URL, fallback: ("asset://hambuwurg.png") }
 
   /batch:
     type: batch

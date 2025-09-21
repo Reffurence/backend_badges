@@ -45,7 +45,7 @@ layers:
         width: 3px
 
   - !<text>
-    text: Design is coming
+    text: Hello world!
     font: asset://delius.ttf
     size: 20px
     pos: [ 50%, 50px ]
