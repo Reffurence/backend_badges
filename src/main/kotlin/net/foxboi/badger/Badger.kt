@@ -13,6 +13,8 @@ import kotlin.concurrent.thread
  * The main object of the Badger application.
  */
 object Badger {
+    const val version = BuildInfo.VERSION
+
     /**
      * The [Yaml] configuration used by all YAML parsing in Badger.
      */

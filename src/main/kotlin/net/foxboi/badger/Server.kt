@@ -247,7 +247,7 @@ class Server {
                         })
                     } else {
                         call.respondText(writeMessage {
-                            println("Hi I am Badger server")
+                            println("Hi I am Badger server v${Badger.version}")
                         })
                     }
                 } else {
