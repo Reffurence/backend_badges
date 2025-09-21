@@ -202,7 +202,7 @@ class Server {
                 try {
                     Badger.yaml.decodeFromString<Router>(text)
                 } catch (e: Exception) {
-                    throw ConfigException("Failed to load router", e)
+                    throw EngineException("Failed to load router", e)
                 }
             }
         }
