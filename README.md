@@ -1,7 +1,8 @@
 # Badger
 
-**Badger is currently in beta. For the latest version, check the
-[releases](https://github.com/FoxSamu/badger/releases).**
+**Badger is currently in beta development and may receive a lot of updates in a very
+short timespan (sometimes multiple a day). For the latest version, check the
+[releases](https://github.com/FoxSamu/badger/releases) page.**
 
 Badger is a system for generating images out of templates and supplied data. It was written for
 [Reffurence](https://github.com/Reffurence) to generate convention badges.
