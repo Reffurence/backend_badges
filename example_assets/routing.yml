@@ -2,10 +2,18 @@ routes:
   /template:
     type: template
     from: asset://template.yml
+    desc: Generates a template file
     params:
-      margin: { type: len }
-      img: { type: str }
+      margin: { type: len, desc: A margin }
+      img: { type: str, desc: An image URL }
 
   /batch:
     type: batch
     from: asset://batch.yml
+    desc: Generates a batch file
+
+  /raw:
+    type: raw
+    from: asset://hambuwurg.png
+    mime: image/png
+    desc: Serves a raw asset
