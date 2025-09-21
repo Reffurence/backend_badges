@@ -202,51 +202,76 @@ class Server {
         }
     }
 
+    private suspend inline fun ApplicationCall.handle500(action: suspend ApplicationCall.() -> Unit) {
+        try {
+            action()
+        } catch (e: Exception) {
+            val msg = writeMessage {
+                println("500 Internal Server Error")
+                println("This may be caused by wrong input, currently Badger can't fully trace back")
+                println("whether evaluation errors come from query parameters or internal configuration")
+                println("errors. Attached below is the stack trace, in the hope that it's useful.")
+                println()
+                e.printStackTrace(this)
+            }
+            respondText(msg, status = HttpStatusCode.InternalServerError)
+        } catch (_: StackOverflowError) {
+            // Stack-overflows are a common vulnerability; let's catch them, idk why they aren't an Exception
+            val msg = writeMessage {
+                println("500 Internal Server Error")
+                println("A stack overflow happened during evaluation.")
+            }
+            respondText(msg, status = HttpStatusCode.InternalServerError)
+        }
+    }
+
     private fun Routing.configRouting() {
         get("/{route...}") {
-            val routePath = call.parameters.getAll("route")
+            call.handle500 {
+                val routePath = call.parameters.getAll("route")
 
-            if (routePath == null || routePath.isEmpty()) {
-                if ("-help" in call.request.queryParameters) {
-                    val router = getRouter()
+                if (routePath == null || routePath.isEmpty()) {
+                    if ("-help" in call.request.queryParameters) {
+                        val router = getRouter()
 
-                    call.respondText(writeMessage {
-                        println("Route overview")
-                        println()
-                        println(router?.writeAllHelp() ?: "No routing was configured")
-                    })
+                        call.respondText(writeMessage {
+                            println("Route overview")
+                            println()
+                            println(router?.writeAllHelp() ?: "No routing was configured")
+                        })
+                    } else {
+                        call.respondText(writeMessage {
+                            println("Hi I am Badger server")
+                        })
+                    }
                 } else {
-                    call.respondText(writeMessage {
-                        println("Hi I am Badger server")
-                    })
-                }
-            } else {
-                val routeString = routePath.joinToString("") { "/$it" }
+                    val routeString = routePath.joinToString("") { "/$it" }
 
-                val router = getRouter()
-                val route = router?.route(routeString)
+                    val router = getRouter()
+                    val route = router?.route(routeString)
 
-                when {
-                    router == null -> {
-                        val msg = writeMessage {
-                            println("404 Not Found")
-                            println()
-                            println("No router was configured")
+                    when {
+                        router == null -> {
+                            val msg = writeMessage {
+                                println("404 Not Found")
+                                println()
+                                println("No router was configured")
+                            }
+                            call.respondText(msg, status = HttpStatusCode.NotFound)
                         }
-                        call.respondText(msg, status = HttpStatusCode.NotFound)
-                    }
 
-                    route == null -> {
-                        val msg = writeMessage {
-                            println("404 Not Found")
-                            println()
-                            println(router.writeAvailableRoutes())
+                        route == null -> {
+                            val msg = writeMessage {
+                                println("404 Not Found")
+                                println()
+                                println(router.writeAvailableRoutes())
+                            }
+                            call.respondText(msg, status = HttpStatusCode.NotFound)
                         }
-                        call.respondText(msg, status = HttpStatusCode.NotFound)
-                    }
 
-                    else -> {
-                        call.handleRoute(routeString, route)
+                        else -> {
+                            call.handleRoute(routeString, route)
+                        }
                     }
                 }
             }
