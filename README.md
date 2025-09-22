@@ -16,6 +16,9 @@ resulting outputs can be zipped or written to a PDF.
 
 # Running
 
+Badger runs on the JVM, so it runs virtually anywhere. Badger requires Java 17 or higher
+to run, make sure you have Java 17 installed (try running `java -version`).
+
 You can compile and run Badger from the source code simply with `./gradlew run`
 (permission denied? &rightarrow; `chmod +x gradlew`).
 This will run the server configured with `example_config.yml` as configuration file.
@@ -84,6 +87,20 @@ assets, and you can go to http://localhost/template to get the following image:
 ![A generated template example](docs/template.png)
 
 The template of this can be found at [examples/template.yml](examples/template.yml).
+
+# Dependencies
+
+Badger depends on:
+
+- The Java 17 runtime;
+- Kotlin, Kotlin Coroutines and Kotlin Serialization;
+- Ktor, providing the HTTP server and client framework;
+- Skia via Skiko, for drawing vector graphics and text to bitmaps;
+- ANTLR 4, for parsing expressions;
+- Log4j 2, for logging;
+- OpenPDF, for generating PDF files;
+- KAML, for parsing YAML files;
+- MinIO Java SDK, for accessing S3 storage.
 
 # Problems? Missing features?
 
