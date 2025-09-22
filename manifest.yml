@@ -107,4 +107,9 @@ spec:
           targetPort: 80
           protocol: TCP
 
-          
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dev-badges
+  namespace: dev-backend
