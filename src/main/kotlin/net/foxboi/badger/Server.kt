@@ -212,6 +212,7 @@ class Server {
         try {
             action()
         } catch (e: Exception) {
+            Log.error(e) { "Exception caught during evaluation of endpoint" }
             val msg = writeMessage {
                 println("500 Internal Server Error")
                 println("This may be caused by wrong input, currently Badger can't fully trace back")
@@ -222,7 +223,8 @@ class Server {
             }
             respondText(msg, status = HttpStatusCode.InternalServerError)
         } catch (_: StackOverflowError) {
-            // Stack-overflows are a common vulnerability; let's catch them, idk why they aren't an Exception
+            // Stack-overflows are a common vulnerability; let's catch them, it shouldn't do any harm
+            Log.fatal { "Stack overflow during evaluation of endpoint!" }
             val msg = writeMessage {
                 println("500 Internal Server Error")
                 println("A stack overflow happened during evaluation.")
