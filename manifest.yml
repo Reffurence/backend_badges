@@ -25,6 +25,9 @@ spec:
                   imagePullPolicy: Always
                   ports:
                       - containerPort: 80
+                  envFrom:
+                      - secretRef:
+                          name: dev-badger                      
             imagePullSecrets:
                 - name: acr-secret-dev
             tolerations:
@@ -80,6 +83,9 @@ spec:
                   imagePullPolicy: Always
                   ports:
                       - containerPort: 80
+                  envFrom:
+                      - secretRef:
+                          name: prod-badger
             imagePullSecrets:
                 - name: acr-secret-prod
             tolerations:
@@ -106,10 +112,3 @@ spec:
           port: 80
           targetPort: 80
           protocol: TCP
-
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: dev-badges
-  namespace: dev-backend
