@@ -24,12 +24,23 @@ the `CONFIG_PATH` environment variable, or the `net.foxboi.badger.config_path` J
 The file doesn't need to be present, even when the path to it is explicitly specified. When
 the file is absent, it is simply loads the default values.
 
+## Logging
+
+The only exception to Badger's configuration ecosystem is the logging configuration. This is
+handled by Log4j. By default, Badger will log to the standard output and to a logfile in the
+`./logs` directory (relative to the working directory).
+
+For more information about configuring Log4j, check out
+[their documentation](https://logging.apache.org/log4j/2.x/manual/configuration.html).
+
 # Config Properties
 
 The following configuration options are available. We'll describe them below, but first we'll give a quick overview.
 
 | Env. Variable          | JVM Property                             | Config File                     | Default                                           |
 |------------------------|------------------------------------------|---------------------------------|---------------------------------------------------|
+| `PORT`                 | `net.foxboi.badger.port`                 | `port`                          | `80`                                              |
+| `HOST`                 | `net.foxboi.badger.host`                 | `host`                          | `0.0.0.0`                                         |
 | `ASSET_SOURCE`         | `net.foxboi.badger.asset_source`         | `asset_source` (see note below) | `empty`                                           |
 | `ASSETS_DIR`           | `net.foxboi.badger.assets_dir`           | `asset_source > directory`      | `null`                                            |
 | `ASSET_ENDPOINT`       | `net.foxboi.badger.asset_endpoint`       | `asset_source > endpoint`       | `null`                                            |
@@ -37,7 +48,7 @@ The following configuration options are available. We'll describe them below, bu
 | `MINIO_ACCESS_KEY`     | `net.foxboi.badger.minio_access_key`     | `asset_source > access_key`     | `null`                                            |
 | `MINIO_SECRET_KEY`     | `net.foxboi.badger.minio_secret_key`     | `asset_source > secret_key`     | `null`                                            |
 | `MINIO_NO_CREDENTIALS` | `net.foxboi.badger.minio_no_credentials` | `asset_source > no_credentials` | `false`                                           |
-| `ASSET_PREFIX`         | `net.foxboi.badger.asset_prefix`         | `asset_source > asset_prefix`   | `""`                                              |
+| `ASSET_PREFIX`         | `net.foxboi.badger.asset_prefix`         | `asset_source > asset_prefix`   | `""` (empty string)                               |
 | `TEMP_DIR`             | `net.foxboi.badger.temp_dir`             | `temp_dir`                      | System temporary directory (e.g. `/tmp` on Linux) |
 | `ROUTER`               | `net.foxboi.badger.router`               | `router`                        | `null`                                            |
 
@@ -62,6 +73,13 @@ asset_source: !<local>         # ASSET_SOURCE = local
 
 router: asset://router.yml     # ROUTER = asset://router.yml
 ```
+
+## Server Port
+
+The `port` and `host` properties configure the HTTP server's port and hostname. These
+are pretty straigtforward. Typically these properties can be left left unspecified, making
+the server bind at port `80` on the default host. However, you may configure these as
+desired.
 
 ## Asset Sources
 
@@ -157,6 +175,28 @@ router: asset://router.yml      # ROUTER = asset://router.yml
 Note that when no router is specified, then the server will only serve the `/` endpoint,
 all other endpoints will return a 404 status code.
 
+# Configuration Errors
+
+Badger will fail to start when there are irrecoverable inconsistencies in the configuration
+file. It will simply exit, likely throwing a `ConfigException`. Typically this means
+that it failed to parse the configuration file or any of the values. In case this happens,
+make sure to check if your YAML syntax is correct, and if you specified all the property values
+correctly:
+
+- boolean values are either `true` or `false`;
+- `asset_source` is one of the accepted types;
+- `router` specifies a valid asset URI;
+- `port` is a valid port between 0 and 65535.
+
+Configuration values are case sensitive, so also check if you didn't specify any property value with
+the wrong capitalisation. For example, on a boolean property, `true` is valid, but `True` and `TRUE` aren't.
+
+While loading configuration, Badger should only throw `ConfigException`s. In case Badger
+throws a different exception, this is a bug and it should be reported. On the other hand, Badger is
+also not supposed to throw any `ConfigException`s after having succesfully loaded the configuration.
+In such cases it will not shut down, but rather just respond with `500 Internal Server Error`, attaching
+the stack trace in the response.
+
 # Which Configuration Method Do I Use?
 
 While possible to use, it is discouraged to use the JVM properties. It is almost always
@@ -201,3 +241,5 @@ the above config file, you can set `MINIO_SECRET_KEY` and it will override the `
 property while keeping the others the same. In case your config file is kept secret, you may also put the secrets in the
 config file itself.
 
+This is something that may get changed later. However, this effect is considered intended
+for now.
