@@ -1,0 +1,5 @@
+options:
+  - name: batch
+    batch: asset://batch.yml
+    params:
+      margin: { type: len, desc: A margin, fallback: (15px) }

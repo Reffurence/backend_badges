@@ -4,13 +4,18 @@ routes:
     from: asset://template.yml
     desc: Generates a template file
     params:
-      margin: { type: len, desc: A margin }
-      img: { type: str, desc: An image URL }
+      margin: { type: len, desc: A margin, fallback: (15px) }
+      img: { type: str, desc: An image URL, fallback: ("asset://hambuwurg.png") }
 
   /batch:
     type: batch
     from: asset://batch.yml
     desc: Generates a batch file
+
+  /bulk:
+    type: bulk
+    from: asset://bulk.yml
+    desc: Generates a bulk instance
 
   /raw:
     type: raw

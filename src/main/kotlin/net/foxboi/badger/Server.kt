@@ -14,6 +14,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonPrimitive
 import net.foxboi.badger.export.*
 import net.foxboi.badger.model.Batch
+import net.foxboi.badger.model.BulkInstance
 import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.LocalScope
 import net.foxboi.badger.model.dyn.Scope
@@ -23,6 +24,8 @@ import net.foxboi.badger.route.RouteType
 import net.foxboi.badger.route.Router
 import net.foxboi.badger.serial.SerialDyn
 import net.foxboi.badger.serial.batch.SerialBatch
+import net.foxboi.badger.serial.bulk.SerialBulk
+import net.foxboi.badger.serial.bulk.SerialEntry
 import net.foxboi.badger.serial.template.SerialTemplate
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -130,6 +133,20 @@ class Server {
         }
     }
 
+    private fun ApplicationCall.getProperBulkExporter(): Exporter<BulkInstance> {
+        val q = request.queryParameters
+        val fmt = q["-format"] ?: "extremepdf"
+        return when (fmt.lowercase()) {
+            "extremepdf" -> ExtremePdf
+            "hugepdfzip" -> HugePdfZip
+            "pngzip" -> PngBulkZip
+            "jpgzip", "jpegzip" -> JpegBulkZip
+            "webpzip" -> WebpBulkZip
+            "pdfzip" -> PdfBulkZip
+            else -> throw BadRequestException("Unsupported format: '$fmt'")
+        }
+    }
+
     private inline fun writeMessage(out: PrintWriter.() -> Unit): String {
         val sw = StringWriter()
         val pw = PrintWriter(sw)
@@ -141,6 +158,62 @@ class Server {
         return sw.toString()
     }
 
+    private suspend fun ApplicationCall.handlePost(path: String, route: Route) {
+        try {
+            Log.info { "POST ${request.uri}  (${route.type.desc} route from ${route.from})" }
+
+            if ("-help" in request.queryParameters) {
+                respondText(writeMessage {
+                    println(route.writeHelp(path))
+                })
+            } else when (route.type) {
+                RouteType.TEMPLATE -> {
+                    respondText(writeMessage {
+                        println("405 Method Not Allowed")
+                        println("Use GET on template endpoints")
+                    }, status = HttpStatusCode.MethodNotAllowed)
+                }
+
+                RouteType.BATCH -> {
+                    respondText(writeMessage {
+                        println("405 Method Not Allowed")
+                        println("Use GET on batch endpoints")
+                    }, status = HttpStatusCode.MethodNotAllowed)
+                }
+
+                RouteType.BULK -> {
+                    val stack = ScopeStack()
+                    stack.pushBack(matchVarsFromQuery(route))
+
+                    val yml = Badger.assets.text(route.from)
+
+                    val serial = Badger.yaml.decodeFromString<SerialBulk>(yml)
+                    val bulk = serial.instantiate()
+
+                    val entries = Badger.json.decodeFromString<List<SerialEntry>>(receiveText())
+                    val instance = bulk.instantiate(entries)
+
+                    respondExported(instance, getProperBulkExporter(), stack)
+                }
+
+                RouteType.RAW -> {
+                    respondText(writeMessage {
+                        println("405 Method Not Allowed")
+                        println("Use GET on raw endpoints")
+                    }, status = HttpStatusCode.MethodNotAllowed)
+                }
+            }
+        } catch (e: BadRequestException) {
+            val msg = writeMessage {
+                println("400 Bad Request")
+                println(e.message)
+                println()
+                println(route.writeHelp(path))
+            }
+            respondText(msg, status = HttpStatusCode.BadRequest)
+        }
+    }
+
     private suspend fun ApplicationCall.handleGet(path: String, route: Route) {
         try {
             Log.info { "GET ${request.uri}  (${route.type.desc} route from ${route.from})" }
@@ -148,6 +221,17 @@ class Server {
             if ("-help" in request.queryParameters) {
                 respondText(writeMessage {
                     println(route.writeHelp(path))
+
+                    if (route.type == RouteType.BULK) {
+                        val yml = Badger.assets.text(route.from)
+
+                        val serial = Badger.yaml.decodeFromString<SerialBulk>(yml)
+                        val bulk = serial.instantiate()
+
+                        println()
+                        println()
+                        println(bulk.writeHelp())
+                    }
                 })
             } else when (route.type) {
                 RouteType.TEMPLATE -> {
@@ -172,6 +256,13 @@ class Server {
                     val batch = serial.instantiate()
 
                     respondExported(batch, getProperBatchExporter(), stack)
+                }
+
+                RouteType.BULK -> {
+                    respondText(writeMessage {
+                        println("405 Method Not Allowed")
+                        println("Use POST on bulk endpoints")
+                    }, status = HttpStatusCode.MethodNotAllowed)
                 }
 
                 RouteType.RAW -> {
@@ -202,7 +293,7 @@ class Server {
                 try {
                     Badger.yaml.decodeFromString<Router>(text)
                 } catch (e: Exception) {
-                    throw ConfigException("Failed to load router", e)
+                    throw EngineException("Failed to load router", e)
                 }
             }
         }
@@ -212,6 +303,7 @@ class Server {
         try {
             action()
         } catch (e: Exception) {
+            Log.error(e) { "Exception caught during evaluation of endpoint" }
             val msg = writeMessage {
                 println("500 Internal Server Error")
                 println("This may be caused by wrong input, currently Badger can't fully trace back")
@@ -222,7 +314,8 @@ class Server {
             }
             respondText(msg, status = HttpStatusCode.InternalServerError)
         } catch (_: StackOverflowError) {
-            // Stack-overflows are a common vulnerability; let's catch them, idk why they aren't an Exception
+            // Stack-overflows are a common vulnerability; let's catch them, it shouldn't do any harm
+            Log.fatal { "Stack overflow during evaluation of endpoint!" }
             val msg = writeMessage {
                 println("500 Internal Server Error")
                 println("A stack overflow happened during evaluation.")
@@ -231,55 +324,69 @@ class Server {
         }
     }
 
-    private fun Routing.configRouting() {
-        get("/{route...}") {
-            call.handle500 {
-                val routePath = call.parameters.getAll("route")
+    private suspend inline fun ApplicationCall.handleRouting(
+        handleRoute: suspend (path: String, route: Route) -> Unit
+    ) {
+        handle500 {
+            val routePath = parameters.getAll("route")
 
-                if (routePath == null || routePath.isEmpty()) {
-                    if ("-help" in call.request.queryParameters) {
-                        val router = getRouter()
-
-                        call.respondText(writeMessage {
-                            println("Route overview")
-                            println()
-                            println(router?.writeAllHelp() ?: "No routing was configured")
-                        })
-                    } else {
-                        call.respondText(writeMessage {
-                            println("Hi I am Badger server v${Badger.version}")
-                        })
-                    }
-                } else {
-                    val routeString = routePath.joinToString("") { "/$it" }
-
+            if (routePath == null || routePath.isEmpty()) {
+                if ("-help" in request.queryParameters) {
                     val router = getRouter()
-                    val route = router?.route(routeString)
 
-                    when {
-                        router == null -> {
-                            val msg = writeMessage {
-                                println("404 Not Found")
-                                println()
-                                println("No router was configured")
-                            }
-                            call.respondText(msg, status = HttpStatusCode.NotFound)
-                        }
+                    respondText(writeMessage {
+                        println("Route overview")
+                        println()
+                        println(router?.writeAllHelp() ?: "No routing was configured")
+                    })
+                } else {
+                    respondText(writeMessage {
+                        println("Hi I am Badger server v${Badger.version}")
+                    })
+                }
+            } else {
+                val routeString = routePath.joinToString("") { "/$it" }
 
-                        route == null -> {
-                            val msg = writeMessage {
-                                println("404 Not Found")
-                                println()
-                                println(router.writeAvailableRoutes())
-                            }
-                            call.respondText(msg, status = HttpStatusCode.NotFound)
-                        }
+                val router = getRouter()
+                val route = router?.route(routeString)
 
-                        else -> {
-                            call.handleGet(routeString, route)
+                when {
+                    router == null -> {
+                        val msg = writeMessage {
+                            println("404 Not Found")
+                            println()
+                            println("No router was configured")
                         }
+                        respondText(msg, status = HttpStatusCode.NotFound)
+                    }
+
+                    route == null -> {
+                        val msg = writeMessage {
+                            println("404 Not Found")
+                            println()
+                            println(router.writeAvailableRoutes())
+                        }
+                        respondText(msg, status = HttpStatusCode.NotFound)
+                    }
+
+                    else -> {
+                        handleRoute(routeString, route)
                     }
                 }
+            }
+        }
+    }
+
+    private fun Routing.configRouting() {
+        get("/{route...}") {
+            call.handleRouting { path, route ->
+                call.handleGet(path, route)
+            }
+        }
+
+        post("/{route...}") {
+            call.handleRouting { path, route ->
+                call.handlePost(path, route)
             }
         }
     }

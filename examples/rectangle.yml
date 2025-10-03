@@ -1,0 +1,10 @@
+size: [ 200, 200 ]
+
+layers:
+  - !<rect>
+    rect: [ 0%, 0%, 100%, 100% ]
+    color: (#FFF)
+
+  - !<rect>
+    rect: [ 20px, 25%, 100% - 40px, 50% ]
+    color: (#F00)

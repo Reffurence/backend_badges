@@ -3,7 +3,7 @@ package net.foxboi.badger.export
 import net.foxboi.badger.asset.AssetManager
 import net.foxboi.badger.graphics.skia.SkiaContext
 import net.foxboi.badger.model.Batch
-import net.foxboi.badger.model.Entry
+import net.foxboi.badger.model.BatchEntry
 import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.ScopeStack
 import org.jetbrains.skia.Bitmap
@@ -37,10 +37,10 @@ suspend fun drawTemplateToBitmap(template: Template, stack: ScopeStack, assets: 
 }
 
 /**
- * Draw an [Entry] to a Skia [Bitmap], if needed.
+ * Draw an [BatchEntry] to a Skia [Bitmap], if needed.
  *
  * @param batch  The [Batch] where the entry is from.
- * @param entry  The [Entry] to draw.
+ * @param entry  The [BatchEntry] to draw.
  * @param stack  The [ScopeStack] to fetch variables from.
  * @param assets The [AssetManager] to load assets from.
  *
@@ -48,7 +48,7 @@ suspend fun drawTemplateToBitmap(template: Template, stack: ScopeStack, assets: 
  */
 suspend fun drawEntryToBitmap(
     batch: Batch,
-    entry: Entry,
+    entry: BatchEntry,
     stack: ScopeStack,
     assets: AssetManager,
     cache: TemplateCache,

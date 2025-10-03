@@ -42,7 +42,7 @@ data class Route(
             if (params.isNotEmpty()) {
                 append(':')
             }
-            append("  (${type.desc})")
+            append("  (${type.desc}; use with ${type.methods})")
             append('\n')
             for ((name, param) in params) {
                 append(" - ${param.writeHelpLine(name)}\n")

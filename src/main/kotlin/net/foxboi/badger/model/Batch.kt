@@ -11,7 +11,7 @@ import net.foxboi.badger.model.dyn.LocalScope
  */
 class Batch {
     val scope = LocalScope()
-    val entries = mutableMapOf<String, Entry>()
+    val entries = mutableMapOf<String, BatchEntry>()
 
     fun set(name: String, value: Value<*>) {
         scope.set(name, value)
@@ -25,7 +25,7 @@ class Batch {
         scope.unset(name)
     }
 
-    fun addEntry(name: String, entry: Entry) {
+    fun addEntry(name: String, entry: BatchEntry) {
         entries[name] = entry
     }
 }
