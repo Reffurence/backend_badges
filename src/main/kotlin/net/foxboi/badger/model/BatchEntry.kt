@@ -10,7 +10,7 @@ import net.foxboi.badger.model.dyn.LocalScope
  * An entry in a [Batch]. Entries consist of a template asset, an optional condition that determines if the entry should
  * be included in an export, and a (local scope)[LocalScope] that takes precedence over the batch's scope.
  */
-class Entry(
+class BatchEntry(
     val template: Dyn<Asset>,
     val condition: Dyn<Boolean> = Dyn.const(true)
 ) {

@@ -3,6 +3,7 @@ package net.foxboi.badger
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.io.files.Path
+import kotlinx.serialization.json.Json
 import net.foxboi.badger.asset.AssetManager
 import net.foxboi.badger.export.pdf.PdfManager
 import net.foxboi.badger.export.zip.ZipManager
@@ -23,6 +24,13 @@ object Badger {
             strictMode = false
         )
     )
+
+    /**
+     * The [Json] configuration used by all JSON parsing in Badger.
+     */
+    val json = Json {
+        ignoreUnknownKeys = true
+    }
 
     /**
      * The [Config].

@@ -5,6 +5,7 @@ import org.jetbrains.skia.EncodedImageFormat
 /**
  * Exports batces to a ZIP of JPEGs.
  */
-object PngZip : ImageZipExporter(
-    EncodedImageFormat.PNG
+object JpegBulkZip : ImageBulkZipExporter(
+    EncodedImageFormat.JPEG,
+    90
 )

@@ -12,6 +12,11 @@ routes:
     from: asset://batch.yml
     desc: Generates a batch file
 
+  /bulk:
+    type: bulk
+    from: asset://bulk.yml
+    desc: Generates a bulk instance
+
   /raw:
     type: raw
     from: asset://hambuwurg.png

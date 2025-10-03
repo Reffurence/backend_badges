@@ -3,7 +3,7 @@ package net.foxboi.badger.serial.batch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import net.foxboi.badger.expr.BoolType
-import net.foxboi.badger.model.Entry
+import net.foxboi.badger.model.BatchEntry
 import net.foxboi.badger.model.dyn.Dyn
 import net.foxboi.badger.serial.Serial
 import net.foxboi.badger.serial.SerialDyn
@@ -18,9 +18,9 @@ class SerialEntry(
     val condition: SerialDyn? = null,
 
     val vars: Map<String, SerialExpr> = mutableMapOf()
-) : Serial<Entry> {
-    override fun instantiate(): Entry {
-        val entry = Entry(
+) : Serial<BatchEntry> {
+    override fun instantiate(): BatchEntry {
+        val entry = BatchEntry(
             template.instantiateAsset(),
             condition?.instantiate(BoolType) ?: Dyn.const(true)
         )
