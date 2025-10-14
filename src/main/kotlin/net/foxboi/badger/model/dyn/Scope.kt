@@ -47,7 +47,7 @@ private fun Scope.evalRec(
     resolved: MutableMap<String, Value<*>?>,
     resolving: MutableSet<String>
 ): Value<*> {
-    return expr.eval {
+    return expr.eval(DynEvaluator {
         resolveRec(it, resolved, resolving)
-    }
+    })
 }

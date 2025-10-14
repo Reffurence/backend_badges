@@ -30,5 +30,11 @@ enum class RouteType(val desc: String, val methods: String) {
      * A raw route serves an asset raw.
      */
     @SerialName("raw")
-    RAW("raw", "GET")
+    RAW("raw", "GET"),
+
+    /**
+     * An eval route serves a simple value as text.
+     */
+    @SerialName("eval")
+    EVAL("eval", "GET")
 }

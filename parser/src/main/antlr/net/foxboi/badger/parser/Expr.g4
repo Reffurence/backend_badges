@@ -42,7 +42,7 @@ expr: '(' expr ')'                                                      #parExpr
     | 'if' cond=expr 'then' yes=expr 'else' no=expr                     #condExpr
     | number                                                            #numExpr
     | INT                                                               #intExpr
-    | name=IDENT '(' (args+=expr (',' args+=expr) * ','?)? ')'          #callExpr
+    | name=IDENT ('(' (args+=expr (',' args+=expr) * ','?)? ')')?       #callExpr
     | var=VAR                                                           #varExpr
     | col=COL                                                           #colExpr
     | str=STR                                                           #strExpr

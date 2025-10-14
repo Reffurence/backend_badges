@@ -19,6 +19,7 @@ import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.LocalScope
 import net.foxboi.badger.model.dyn.Scope
 import net.foxboi.badger.model.dyn.ScopeStack
+import net.foxboi.badger.model.dyn.eval
 import net.foxboi.badger.route.Route
 import net.foxboi.badger.route.RouteType
 import net.foxboi.badger.route.Router
@@ -185,7 +186,7 @@ class Server {
                     val stack = ScopeStack()
                     stack.pushBack(matchVarsFromQuery(route))
 
-                    val yml = Badger.assets.text(route.from)
+                    val yml = Badger.assets.text(route.from!!)
 
                     val serial = Badger.yaml.decodeFromString<SerialBulk>(yml)
                     val bulk = serial.instantiate()
@@ -200,6 +201,13 @@ class Server {
                     respondText(writeMessage {
                         println("405 Method Not Allowed")
                         println("Use GET on raw endpoints")
+                    }, status = HttpStatusCode.MethodNotAllowed)
+                }
+
+                RouteType.EVAL -> {
+                    respondText(writeMessage {
+                        println("405 Method Not Allowed")
+                        println("Use GET on eval endpoints")
                     }, status = HttpStatusCode.MethodNotAllowed)
                 }
             }
@@ -223,7 +231,7 @@ class Server {
                     println(route.writeHelp(path))
 
                     if (route.type == RouteType.BULK) {
-                        val yml = Badger.assets.text(route.from)
+                        val yml = Badger.assets.text(route.from!!)
 
                         val serial = Badger.yaml.decodeFromString<SerialBulk>(yml)
                         val bulk = serial.instantiate()
@@ -238,7 +246,7 @@ class Server {
                     val stack = ScopeStack()
                     stack.pushBack(matchVarsFromQuery(route))
 
-                    val yml = Badger.assets.text(route.from)
+                    val yml = Badger.assets.text(route.from!!)
 
                     val serial = Badger.yaml.decodeFromString<SerialTemplate>(yml)
                     val template = serial.instantiate()
@@ -250,7 +258,7 @@ class Server {
                     val stack = ScopeStack()
                     stack.pushBack(matchVarsFromQuery(route))
 
-                    val yml = Badger.assets.text(route.from)
+                    val yml = Badger.assets.text(route.from!!)
 
                     val serial = Badger.yaml.decodeFromString<SerialBatch>(yml)
                     val batch = serial.instantiate()
@@ -266,7 +274,16 @@ class Server {
                 }
 
                 RouteType.RAW -> {
-                    respondSource(Badger.assets.open(route.from), contentType = route.contentType)
+                    respondSource(Badger.assets.open(route.from!!), contentType = route.contentType)
+                }
+
+                RouteType.EVAL -> {
+                    val stack = ScopeStack()
+                    stack.pushBack(matchVarsFromQuery(route))
+
+                    val expr = route.expr!!.instantiate()
+
+                    respondText(stack.eval(expr).string)
                 }
             }
         } catch (e: BadRequestException) {

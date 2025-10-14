@@ -164,7 +164,7 @@ data class Value<A : Any>(
 
         // Comparison
 
-        private fun compare(lhs: Value<*>, rhs: Value<*>): Compare {
+        fun compare(lhs: Value<*>, rhs: Value<*>): Compare {
             // Note that comparison does not fall back on lower rank when the higher rank determines the values
             // are incomparable.
             return max(lhs.type, rhs.type).compare(lhs, rhs)

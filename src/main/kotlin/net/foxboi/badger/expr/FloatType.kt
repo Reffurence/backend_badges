@@ -31,6 +31,7 @@ data object FloatType : Type<Double> {
             NullType -> 0.0
             IntType -> from.cast(IntType)?.value?.toDouble()
             FloatType -> from.cast(FloatType)?.value
+            AngleType -> from.cast(AngleType)?.value
             BoolType -> from.cast(BoolType)?.value?.let { if (it) 1.0 else 0.0 }
             StrType -> from.cast(StrType)?.value?.let { it.toDoubleOrNull() ?: Double.NaN }
 

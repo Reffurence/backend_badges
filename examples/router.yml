@@ -22,3 +22,8 @@ routes:
     from: asset://hambuwurg.png
     mime: image/png
     desc: Serves a raw asset
+
+  /eval:
+    type: eval
+    expr: sin(90deg)
+    desc: Serves the result of an evaluated expression
