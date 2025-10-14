@@ -4,6 +4,7 @@ import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.foxboi.badger.asset.Asset
+import net.foxboi.badger.serial.SerialExpr
 
 /**
  * A route definition.
@@ -15,23 +16,25 @@ import net.foxboi.badger.asset.Asset
 @Serializable
 data class Route(
     val type: RouteType,
-    val from: Asset,
+    val from: Asset? = null,
     val params: Map<String, QueryParam> = mapOf(),
     val mime: String? = null,
-    val desc: String? = null
+    val desc: String? = null,
+    val expr: SerialExpr? = null
 ) {
     @Transient
     val contentType = mime?.let { ContentType.parse(it) }
 
     init {
-        if (type == RouteType.RAW && params.isNotEmpty()) {
-            throw IllegalArgumentException("Can't have 'params' on a 'raw' route type")
-        }
-        if (type != RouteType.RAW && mime != null) {
-            throw IllegalArgumentException("Can't have 'mime' on a '${type.desc}' route type")
+        when {
+            type == RouteType.RAW && params.isNotEmpty() -> throw IllegalArgumentException("Can't have 'params' on a 'raw' route type")
+            type != RouteType.RAW && mime != null -> throw IllegalArgumentException("Can't have 'mime' on a '${type.desc}' route type")
+            type == RouteType.EVAL && from != null -> throw IllegalArgumentException("Can't have 'from' on an 'eval' route type")
+            type == RouteType.EVAL && expr == null -> throw IllegalArgumentException("Missing 'expr' on an 'eval' route type")
+            type != RouteType.EVAL && from == null -> throw IllegalArgumentException("Missing 'from' on a '${type.desc}' route type")
+            type != RouteType.EVAL && expr != null -> throw IllegalArgumentException("Can't have 'expr' on a '${type.desc}' route type")
         }
     }
-
 
     fun writeHelp(route: String): String {
         return buildString {

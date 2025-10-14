@@ -23,6 +23,7 @@ data object IntType : Type<Long> {
             NullType -> 0L
             IntType -> from.cast(IntType)?.value
             FloatType -> from.cast(FloatType)?.value?.toLong()
+            AngleType -> from.cast(AngleType)?.value?.toLong()
             BoolType -> from.cast(BoolType)?.value?.let { if (it) 1L else 0L }
             StrType -> from.cast(StrType)?.value?.let { it.toLongOrNull() ?: 0L }
 

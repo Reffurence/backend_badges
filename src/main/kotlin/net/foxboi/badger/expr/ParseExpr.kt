@@ -298,7 +298,20 @@ private object ExprGenerator : ExprVisitor<Expr> {
     }
 
     override fun visitCallExpr(ctx: ExprParser.CallExprContext): Expr {
-        TODO("Not yet implemented")
+        val name = ctx.name.text
+        val args = ctx.args.map { it.accept(this) }
+        val ops = args.sumOf { it.ops.size }
+
+
+        val builder = ExprBuilder(ops + 3)
+        for (arg in args.asReversed()) { // Put in reverse so they pop from stack in the right order
+            builder.append(arg)
+        }
+        builder.opcode(Ops.CALL)
+        builder.name(name)
+        builder.opcode(args.size)
+
+        return builder.build()
     }
 
     override fun visitConstExpr(ctx: ExprParser.ConstExprContext): Expr {

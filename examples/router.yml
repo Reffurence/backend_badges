@@ -1,7 +1,7 @@
 routes:
   /template:
     type: template
-    from: asset://template.yml
+    from: asset://template1.yml
     desc: Generates a template file
     params:
       margin: { type: len, desc: A margin, fallback: (15px) }
@@ -22,3 +22,8 @@ routes:
     from: asset://hambuwurg.png
     mime: image/png
     desc: Serves a raw asset
+
+  /eval:
+    type: eval
+    expr: sin(90deg)
+    desc: Serves the result of an evaluated expression

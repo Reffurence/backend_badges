@@ -78,6 +78,10 @@ object Ops {
     const val CONV = 0x61
 
     const val COND = 0x70
+
+    const val CALL = 0x80
+
+    const val ASSET_LOCATE = 0x90
 }
 
 private fun error(msg: String): Nothing {
@@ -97,9 +101,23 @@ class Expr internal constructor(
     internal val names: List<String>
 ) {
     fun eval(varGetter: (String) -> Value<*>?): Value<*> {
+        return eval(object : Evaluator {
+            override fun getVar(name: String): Value<*>? {
+                return varGetter(name)
+            }
+
+            override fun getFun(name: String): Fun? {
+                return null
+            }
+        })
+    }
+
+    fun eval(ctx: Evaluator): Value<*> {
         val stack = Stack<Value<*>>()
 
-        visit(ops, consts, names) { op, const, name, type ->
+        val args = mutableListOf<Value<*>>()
+
+        visit(ops, consts, names) { op, const, name, type, params ->
             when (op) {
                 Ops.NOOP -> {}
                 Ops.DUP -> {
@@ -271,7 +289,7 @@ class Expr internal constructor(
                 }
 
                 Ops.LDNULL -> {
-                    stack.push(NullType.inst)
+                    stack.push(NullType.nullValue)
                 }
 
                 Ops.LDC -> {
@@ -279,7 +297,7 @@ class Expr internal constructor(
                 }
 
                 Ops.LDV -> {
-                    stack.push(varGetter(name!!) ?: error("Unbound variable $$name"))
+                    stack.push(ctx.getVar(name!!) ?: error("Unbound variable $$name"))
                 }
 
                 Ops.CAST -> {
@@ -300,6 +318,19 @@ class Expr internal constructor(
                     stack.push(if (cond.truth) lhs else rhs)
                 }
 
+                Ops.CALL -> {
+                    args.clear()
+
+                    var i = 0
+                    while (i < params) {
+                        args += stack.pop()
+                        i++
+                    }
+
+                    val f = ctx.getFun(name!!) ?: error("Unknown function $name")
+                    stack.push(f.call(args))
+                }
+
                 else -> error("Invalid opcode 0x%02X".format(op))
             }
         }
@@ -312,7 +343,7 @@ class Expr internal constructor(
     }
 
     fun writeDebug(out: (String) -> Unit) {
-        visit(ops, consts, names) { op, const, name, type ->
+        visit(ops, consts, names) { op, const, name, type, params ->
             out(
                 when (op) {
                     Ops.NOOP -> "NOOP"
@@ -351,6 +382,8 @@ class Expr internal constructor(
                     Ops.CAST -> "CAST ${type?.name}"
                     Ops.CONV -> "CONV ${type?.name}"
                     Ops.COND -> "COND"
+                    Ops.CALL -> "CALL $name#$params"
+                    Ops.ASSET_LOCATE -> "ASSET_LOCATE"
 
                     else -> "[invalid]"
                 }
@@ -397,7 +430,7 @@ private inline fun visit(
     ops: IntArray,
     consts: List<Value<*>>,
     names: List<String>,
-    code: (op: Int, const: Value<*>?, name: String?, type: Type<*>?) -> Unit
+    code: (op: Int, const: Value<*>?, name: String?, type: Type<*>?, params: Int) -> Unit
 ) {
     val len = ops.size
 
@@ -405,22 +438,27 @@ private inline fun visit(
 
     while (i < len) when (val op = ops[i]) {
         Ops.LDC -> {
-            code(op, consts[ops[i + 1]], null, null)
+            code(op, consts[ops[i + 1]], null, null, -1)
             i += 2
         }
 
         Ops.LDV -> {
-            code(op, null, names[ops[i + 1]], null)
+            code(op, null, names[ops[i + 1]], null, -1)
             i += 2
         }
 
         Ops.CAST, Ops.CONV -> {
-            code(op, null, null, Ops.types[ops[i + 1]])
+            code(op, null, null, Ops.types[ops[i + 1]], -1)
             i += 2
         }
 
+        Ops.CALL -> {
+            code(op, null, names[ops[i + 1]], null, ops[i + 2])
+            i += 3
+        }
+
         else -> {
-            code(op, null, null, null)
+            code(op, null, null, null, -1)
             i++
         }
     }
@@ -468,20 +506,22 @@ class ExprBuilder(capacity: Int) {
     }
 
     fun append(expr: Expr) {
-        visit(expr.ops, expr.consts, expr.names) { op, const, name, type ->
+        visit(expr.ops, expr.consts, expr.names) { op, const, name, type, params ->
             opcode(op)
             if (const != null) const(const)
             if (name != null) name(name)
             if (type != null) type(type)
+            if (params >= 0) opcode(params)
         }
     }
 
     fun append(expr: ExprBuilder) {
-        visit(expr.ops, expr.consts, expr.names) { op, const, name, type ->
+        visit(expr.ops, expr.consts, expr.names) { op, const, name, type, params ->
             opcode(op)
             if (const != null) const(const)
             if (name != null) name(name)
             if (type != null) type(type)
+            if (params >= 0) opcode(params)
         }
     }
 

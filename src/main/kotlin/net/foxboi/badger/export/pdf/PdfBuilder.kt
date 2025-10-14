@@ -4,8 +4,11 @@ import com.lowagie.text.Document
 import com.lowagie.text.Image
 import com.lowagie.text.Rectangle
 import com.lowagie.text.pdf.PdfWriter
+import io.ktor.utils.io.*
+import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import net.foxboi.badger.export.Exportable
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skiko.toBufferedImage
 import java.nio.file.Paths
@@ -14,7 +17,7 @@ import kotlin.io.path.outputStream
 /**
  * A builder that writes images to PDF pages and then writes the PDF to a given output file.
  */
-class PdfBuilder(val outputPath: Path) : AutoCloseable {
+class PdfBuilder(val outputPath: Path) : AutoCloseable, Exportable {
     init {
         val par = outputPath.parent
         if (par != null) {
@@ -66,5 +69,14 @@ class PdfBuilder(val outputPath: Path) : AutoCloseable {
         cb.sanityCheck()
 
         hasPages = true
+    }
+
+    override suspend fun export(out: ByteWriteChannel) {
+        SystemFileSystem
+            .source(outputPath)
+            .buffered()
+            .use { it.transferTo(out.asSink()) }
+
+        delete()
     }
 }

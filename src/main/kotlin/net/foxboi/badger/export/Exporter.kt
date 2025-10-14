@@ -26,7 +26,7 @@ interface Exporter<E> {
      * @param assets    The [AssetManager], to be used when fetching assets.
      * @param out       The [ByteWriteChannel] to write the output to.
      */
-    suspend fun export(element: E, stack: ScopeStack, assets: AssetManager, out: ByteWriteChannel)
+    suspend fun export(element: E, stack: ScopeStack, assets: AssetManager): Exportable
 }
 
 /**
@@ -45,7 +45,8 @@ suspend fun <E> ApplicationCall.respondExported(
     assets: AssetManager = Badger.assets,
     status: HttpStatusCode = HttpStatusCode.OK
 ) {
+    val exp = exporter.export(element, stack, assets)
     respondBytesWriter(contentType = exporter.contentType, status = status) {
-        exporter.export(element, stack, assets, this)
+        exp.export(this)
     }
 }

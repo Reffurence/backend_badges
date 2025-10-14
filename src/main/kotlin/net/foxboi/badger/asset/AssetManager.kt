@@ -8,6 +8,7 @@ import io.ktor.http.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -122,6 +123,19 @@ class AssetManager(
         return entry.path
     }
 
+    private fun locate(url: Url): Boolean {
+        val entry = entry(url)
+
+        if (!entry.isOutdated() && SystemFileSystem.exists(entry.path)) {
+            return true
+        }
+
+        Log.warn { "Locating $url. This is slow and should be avoided." }
+
+        val response = runBlocking { client.head(url) }
+        return response.status == HttpStatusCode.OK
+    }
+
     /**
      * Opens an [Asset] as a [Source]. May suspend to download the asset.
      */
@@ -130,6 +144,17 @@ class AssetManager(
             is Asset.Remote -> SystemFileSystem.source(download(asset.url)).buffered()
             is Asset.Local -> source.read(checkExists(asset.path))
             is Asset.Data -> asset.uri.toBuffer()
+        }
+    }
+
+    /**
+     * Opens an [Asset] as a [Source]. May suspend to download the asset.
+     */
+    fun exists(asset: Asset): Boolean {
+        return when (asset) {
+            is Asset.Remote -> locate(asset.url)
+            is Asset.Local -> source.exists(asset.path)
+            is Asset.Data -> true
         }
     }
 

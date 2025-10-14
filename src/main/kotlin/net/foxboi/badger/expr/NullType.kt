@@ -4,10 +4,10 @@ data object NullType : Type<Unit> {
     override val rank = TypeRank.NULL
     override val name = "null"
 
-    val inst = Value(this, Unit)
+    val nullValue = Value(this, Unit)
 
     override fun new(value: Unit): Value<Unit> {
-        return inst
+        return nullValue
     }
 
     override fun truth(value: Unit): Boolean {
