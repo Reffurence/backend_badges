@@ -6,13 +6,15 @@ you.
 
 Badger's server endpoints are defined in the [router file](./router.md). The server simply
 serves exactly what is configured there.
-As of Badger version `1.0-beta.7`, the router can define four types of endpoints:
-template endpoints, batch endpoints, bulk endpoints and raw endpoints.
+As of Badger version `1.0-beta.8`, the router can define five types of endpoints:
+template endpoints, batch endpoints, bulk endpoints, raw endpoints and evaluation endpoints.
 
-Template endpoints generate a single image from a [template file](./templates.md).
-Batch endpoints generate multiple templates, as specified by a [batch file](./batches.md).
-Bulk endpoints generate multiple batches, as specified by a [bulk file](./batches.md) and the request body.
-Raw endpoints serve an asset without any modification.
+- Template endpoints generate a single image from a [template file](./templates.md).
+- Batch endpoints generate multiple templates, as specified by a [batch file](./batches.md).
+- Bulk endpoints generate multiple batches, as specified by a [bulk file](./batches.md) and the request body.
+- Raw endpoints serve an asset without any modification.
+- Evaluation endpoints evaluate expressions and return the result as text.
+
 Template and batch endpoint types depend on query parameters for input. Bulk endpoints may
 need query parameters, but their main source of input is the request body. The exact query parameters
 recognised by each endpoint are specified in the router file. Raw endpoints never take any inputs,
@@ -177,15 +179,17 @@ When accessing an endpoint with the wrong method, Badger will return a
 Use POST on bulk endpoints
 ```
 
-### 500 Internal Server Error
+### 418 I'm A Teapot
 
 Currently, some of the internal evaluation of Badger can cause a wrong input to generate
-a `500 Internal Server Error`, despite it being a client issue.
-However, this error is generated whenever an exception
-is thrown in Badger, and may indicate a bug. In most cases, Badger will simply catch
-the exception and return a text message with the stack trace.
+exceptions, from which it cannot trace back whether the cause was a bug, a configuration
+error, or an input error. Badger will return `418` in this case.
 
-Badger attempts to return the stack trace with the 500 status code, but it can happen
-that it fails to do so and may simply return no content with the error. This is always
+Badger attempts to return the stack trace with the 418 status code, but it can happen
+that it fails to do so and may simply return no content with a 500 status code. This is always
 a bug and should be reported in an [issue](https://github.com/FoxSamu/badger/issues).
+
+There have been issues where Badger returned a partial transfer due to an exception. This should never
+happen, and in the case it happens it should be reported. Badger will log the exceptions,
+in this case the log must be checked to find the stack trace.
 
