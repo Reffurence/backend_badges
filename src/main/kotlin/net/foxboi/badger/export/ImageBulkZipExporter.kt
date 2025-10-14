@@ -1,9 +1,6 @@
 package net.foxboi.badger.export
 
 import io.ktor.http.*
-import io.ktor.utils.io.*
-import kotlinx.io.buffered
-import kotlinx.io.files.SystemFileSystem
 import net.foxboi.badger.Badger
 import net.foxboi.badger.EngineException
 import net.foxboi.badger.asset.AssetManager
@@ -25,9 +22,8 @@ abstract class ImageBulkZipExporter(
     override suspend fun export(
         element: BulkInstance,
         stack: ScopeStack,
-        assets: AssetManager,
-        out: ByteWriteChannel
-    ) {
+        assets: AssetManager
+    ): Exportable {
         val zip = Badger.zip.getBuilder()
         val cache = TemplateCache(assets)
 
@@ -45,13 +41,6 @@ abstract class ImageBulkZipExporter(
             }
         }
 
-        val outPath = zip.outputPath
-
-        SystemFileSystem
-            .source(outPath)
-            .buffered()
-            .use { it.transferTo(out.asSink()) }
-
-        zip.delete()
+        return zip
     }
 }

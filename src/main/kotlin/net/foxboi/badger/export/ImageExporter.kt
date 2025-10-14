@@ -1,7 +1,6 @@
 package net.foxboi.badger.export
 
 import io.ktor.http.*
-import io.ktor.utils.io.*
 import net.foxboi.badger.asset.AssetManager
 import net.foxboi.badger.model.Template
 import net.foxboi.badger.model.dyn.ScopeStack
@@ -20,15 +19,14 @@ abstract class ImageExporter(
     override suspend fun export(
         element: Template,
         stack: ScopeStack,
-        assets: AssetManager,
-        out: ByteWriteChannel
-    ) {
+        assets: AssetManager
+    ): Exportable {
         val bmp = drawTemplateToBitmap(element, stack, assets)
 
         val img = Image.makeFromBitmap(bmp)
         val data = img.encodeToData(format, quality)
             ?: throw RuntimeException("Failed to encode $format")
 
-        out.writeByteArray(data.bytes)
+        return Exportable.bytes(data.bytes)
     }
 }

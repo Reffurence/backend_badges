@@ -1,9 +1,6 @@
 package net.foxboi.badger.export
 
 import io.ktor.http.*
-import io.ktor.utils.io.*
-import kotlinx.io.buffered
-import kotlinx.io.files.SystemFileSystem
 import net.foxboi.badger.Badger
 import net.foxboi.badger.asset.AssetManager
 import net.foxboi.badger.model.BulkInstance
@@ -19,9 +16,8 @@ object ExtremePdf : Exporter<BulkInstance> {
     override suspend fun export(
         element: BulkInstance,
         stack: ScopeStack,
-        assets: AssetManager,
-        out: ByteWriteChannel
-    ) {
+        assets: AssetManager
+    ): Exportable {
         val pdf = Badger.pdf.getBuilder()
         val cache = TemplateCache(assets)
 
@@ -34,13 +30,6 @@ object ExtremePdf : Exporter<BulkInstance> {
             }
         }
 
-        val outPath = pdf.outputPath
-
-        SystemFileSystem
-            .source(outPath)
-            .buffered()
-            .use { it.transferTo(out.asSink()) }
-
-        pdf.delete()
+        return pdf
     }
 }

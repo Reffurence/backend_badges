@@ -19,9 +19,8 @@ object HugePdf : Exporter<Batch> {
     override suspend fun export(
         element: Batch,
         stack: ScopeStack,
-        assets: AssetManager,
-        out: ByteWriteChannel
-    ) {
+        assets: AssetManager
+    ): Exportable {
         val pdf = Badger.pdf.getBuilder()
         val cache = TemplateCache(assets)
 
@@ -34,11 +33,13 @@ object HugePdf : Exporter<Batch> {
 
         val outPath = pdf.outputPath
 
-        SystemFileSystem
-            .source(outPath)
-            .buffered()
-            .use { it.transferTo(out.asSink()) }
+        return Exportable { out ->
+            SystemFileSystem
+                .source(outPath)
+                .buffered()
+                .use { it.transferTo(out.asSink()) }
 
-        pdf.delete()
+            pdf.delete()
+        }
     }
 }

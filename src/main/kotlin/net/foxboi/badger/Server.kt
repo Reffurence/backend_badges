@@ -299,20 +299,23 @@ class Server {
         }
     }
 
+    private val ImATeapot: HttpStatusCode = HttpStatusCode(418, "I'm A Teapot")
+
     private suspend inline fun ApplicationCall.handle500(action: suspend ApplicationCall.() -> Unit) {
         try {
             action()
         } catch (e: Exception) {
             Log.error(e) { "Exception caught during evaluation of endpoint" }
             val msg = writeMessage {
-                println("500 Internal Server Error")
+                println("418 I'm A Teapot")
+                println("...and I don't know whether it's you or me who caused this problem.")
                 println("This may be caused by wrong input, currently Badger can't fully trace back")
                 println("whether evaluation errors come from query parameters or internal configuration")
                 println("errors. Attached below is the stack trace, in the hope that it's useful.")
                 println()
                 e.printStackTrace(this)
             }
-            respondText(msg, status = HttpStatusCode.InternalServerError)
+            respondText(msg, status = ImATeapot)
         } catch (_: StackOverflowError) {
             // Stack-overflows are a common vulnerability; let's catch them, it shouldn't do any harm
             Log.fatal { "Stack overflow during evaluation of endpoint!" }
